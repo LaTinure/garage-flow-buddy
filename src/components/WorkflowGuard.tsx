@@ -68,28 +68,7 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
       console.log('✅ Organisation trouvée');
 
-      // 3. Vérifier si des utilisateurs admin existent
-      const { count: adminCount, error: adminError } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true });
-
-      if (adminError) {
-        console.error('❌ Erreur vérification admins:', adminError);
-        setWorkflowState('needs-init');
-        setInitStep('create-admin');
-        return;
-      }
-
-      if (!adminCount || adminCount === 0) {
-        console.log('⚠️ Aucun admin trouvé - CRÉER ADMIN');
-        setWorkflowState('needs-init');
-        setInitStep('create-admin');
-        return;
-      }
-
-      console.log('✅ Admins trouvés');
-
-      // 4. Vérifier la session utilisateur (seulement si tout le reste est OK)
+      // 3. Vérifier la session utilisateur (seulement si tout le reste est OK)
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
       if (sessionError) {
@@ -106,7 +85,7 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
       console.log('✅ Session utilisateur valide');
 
-      // 5. Vérifier si l'utilisateur a une organisation sélectionnée
+      // 4. Vérifier si l'utilisateur a une organisation sélectionnée
       const storedOrg = localStorage.getItem('current_org');
       const storedOrgCode = localStorage.getItem('org_code');
 
@@ -157,10 +136,10 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
   const handleInitComplete = () => {
     console.log('✅ Initialisation terminée');
-    toast.success('Configuration terminée ! Vous pouvez maintenant vous connecter.');
+    toast.success('Configuration terminée ! Redirection vers le tableau de bord.');
     setWorkflowState('ready');
-    // Rediriger vers auth pour que l'utilisateur se connecte
-    navigate('/auth');
+    // Rediriger vers le tableau de bord après initialisation
+    navigate('/dashboard');
   };
 
   const checkAdminStatus = async () => {

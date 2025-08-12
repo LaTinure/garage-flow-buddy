@@ -157,6 +157,17 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
         code: result.organization.code ?? 'N/A'
       }));
 
+      // Stocker l'organisation dans le localStorage pour le guard
+      try {
+        if (result.organization.id && result.organization.code) {
+          localStorage.setItem('current_org', result.organization.id);
+          localStorage.setItem('org_code', result.organization.code);
+          console.log('✅ Organisation stockée dans localStorage');
+        }
+      } catch (e) {
+        console.warn('⚠️ Impossible de stocker l\'organisation localement:', e);
+      }
+
       toast.success('Organisation créée avec succès!');
       
       // Passer au setup garage
@@ -185,10 +196,8 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
     toast.success('Configuration du garage terminée!');
     setCurrentStep('complete');
 
-    // Rediriger vers l'authentification après un délai
-    setTimeout(() => {
-      onComplete();
-    }, 2000);
+    // Rediriger vers le tableau de bord immédiatement
+    onComplete();
   };
 
 
@@ -429,7 +438,7 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
                 Votre organisation et votre compte administrateur ont été créés avec succès.
               </p>
               <p className="text-sm text-blue-600">
-                Redirection vers la page d'authentification...
+                Redirection vers le tableau de bord...
               </p>
             </div>
           </DialogContent>
