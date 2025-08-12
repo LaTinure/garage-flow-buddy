@@ -26,7 +26,9 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					hover: 'hsl(var(--primary-hover))',
+					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -51,6 +53,12 @@ export default {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
+				},
+				garage: {
+					success: 'hsl(var(--garage-success))',
+					warning: 'hsl(var(--garage-warning))',
+					info: 'hsl(var(--garage-info))',
+					dashboard: 'hsl(var(--garage-dashboard))'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
