@@ -157,6 +157,18 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
         code: result.organization.code ?? 'N/A'
       }));
 
+      // Persister la sélection d'organisation pour le guard
+      try {
+        if (result.organization.id) {
+          localStorage.setItem('current_org', result.organization.id);
+        }
+        if (result.organization.code) {
+          localStorage.setItem('org_code', result.organization.code);
+        }
+      } catch (e) {
+        console.warn('⚠️ Impossible d\'enregistrer l\'organisation en localStorage:', e);
+      }
+
       toast.success('Organisation créée avec succès!');
       
       // Passer au setup garage
