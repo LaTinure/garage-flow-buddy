@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
+import { z } from 'zod';
 
 const supabaseUrl = 'https://metssugfqsnttghfrsxx.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ldHNzdWdmcXNudHRnaGZyc3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDk5NjEsImV4cCI6MjA2ODQyNTk2MX0.Vc0yDgzSe6iAfgUHezVKQMm4qvzMRRjCIrTTndpE1k8';
@@ -746,18 +747,35 @@ export const generateTempPassword = () => {
   return result;
 };
 
+// Types et schéma de validation pour l'organisation
+export const OrganizationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  code: z.string().optional().default('N/A'),
+  slug: z.string().optional().default(''),
+  subscription_type: z.string().optional(),
+});
+
+export type Organization = z.infer<typeof OrganizationSchema>;
+
+export interface CreateOrganizationResponse {
+  success: boolean;
+  organization?: Organization;
+  error?: string;
+}
+
 export const createOrganizationWithAdmin = async (orgData: {
   name: string;
   adminEmail: string;
   adminName: string;
   plan?: string;
-}) => {
+}): Promise<CreateOrganizationResponse> => {
   try {
     // 1. Vérifier et obtenir l'utilisateur authentifié
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      throw new Error('Utilisateur non authentifié');
+      return { success: false, error: 'Utilisateur non authentifié' };
     }
 
     // 2. Préparer les données de l'organisation
@@ -778,21 +796,32 @@ export const createOrganizationWithAdmin = async (orgData: {
       }
     );
 
-    if (rpcError) throw rpcError;
+    if (rpcError) {
+      return { success: false, error: rpcError.message };
+    }
+
+    // 4. Normaliser la réponse pour garantir la forme attendue
+    const normalized = {
+      id: String((orgResult as any)?.id ?? ''),
+      name: (orgResult as any)?.name ?? organizationData.name,
+      code: (orgResult as any)?.code ?? organizationData.code,
+      slug: (orgResult as any)?.slug ?? organizationData.slug,
+      subscription_type: (orgResult as any)?.subscription_type ?? organizationData.subscription_type,
+    };
+
+    const parsed = OrganizationSchema.safeParse(normalized);
+    if (!parsed.success) {
+      return { success: false, error: 'Réponse invalide du serveur' };
+    }
 
     return {
       success: true,
-      organization: orgResult,
-      admin: {
-        id: user.id,
-        email: user.email,
-        name: orgData.adminName
-      }
+      organization: parsed.data,
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur création organisation:', error);
-    throw error;
+    return { success: false, error: error.message || 'Erreur inconnue' };
   }
 };
 

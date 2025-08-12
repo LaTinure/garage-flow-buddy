@@ -21,14 +21,8 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [isDark, setIsDark] = useState(() => {
-    // Récupérer le thème depuis localStorage ou utiliser le thème système
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      return savedTheme === 'dark';
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  // Forcer le mode clair au lancement
+  const [isDark, setIsDark] = useState<boolean>(false);
 
   const toggleTheme = () => {
     setIsDark(prev => !prev);

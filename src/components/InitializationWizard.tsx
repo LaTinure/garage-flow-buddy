@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase, createOrganizationWithAdmin } from '@/integrations/supabase/client';
+import type { CreateOrganizationResponse } from '@/integrations/supabase/client';
 import PricingModal from '@/components/PricingModal';
 import SuperAdminSetupModal from '@/components/SuperAdminSetupModal';
 import GarageSetupModal from '@/components/GarageSetupModal';
@@ -136,20 +137,24 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
         plan: organizationData.selectedPlan
       });
 
-      // Utiliser la fonction RPC simplifiée
-      const result = await createOrganizationWithAdmin({
+      // Utiliser la fonction RPC avec typage et vérification robuste
+      const result: CreateOrganizationResponse = await createOrganizationWithAdmin({
         name: organizationData.name,
         adminEmail: adminData.email,
         adminName: adminData.name,
         plan: organizationData.selectedPlan === 'annual' ? 'yearly' : 'monthly'
       });
 
-      console.log('✅ Organisation créée avec succès:', result);
+      console.log('✅ Réponse création organisation:', result);
 
-      // Mettre à jour les données avec le code généré
+      if (!result?.success || !result.organization) {
+        throw new Error(result?.error || 'Réponse invalide du serveur');
+      }
+
+      // Mettre à jour les données avec le code généré (valeur par défaut si absent)
       setOrganizationData(prev => ({
         ...prev,
-        code: result.organisation.code
+        code: result.organization.code ?? 'N/A'
       }));
 
       toast.success('Organisation créée avec succès!');
