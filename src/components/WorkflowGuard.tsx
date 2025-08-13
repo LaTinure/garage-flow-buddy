@@ -13,7 +13,7 @@ type WorkflowState = 'loading' | 'needs-init' | 'needs-auth' | 'ready';
 
 const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
   const [workflowState, setWorkflowState] = useState<WorkflowState>('loading');
-  const [initStep, setInitStep] = useState<'super-admin' | 'pricing' | 'create-admin'>('super-admin');
+  const [initStep, setInitStep] = useState<'super-admin' | 'create-admin' | 'create-organization'>('super-admin');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,16 +53,16 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
       if (orgError) {
         console.error('❌ Erreur vérification organisations:', orgError);
-        // If table doesn't exist or has issues, start with pricing
+        // If table doesn't exist or has issues, start with organization creation
         setWorkflowState('needs-init');
-        setInitStep('pricing');
+        setInitStep('create-organization');
         return;
       }
 
       if (!orgCount || orgCount === 0) {
-        console.log('⚠️ Aucune organisation trouvée - AFFICHER PRICING');
+        console.log('⚠️ Aucune organisation trouvée - CRÉATION ORGANISATION');
         setWorkflowState('needs-init');
-        setInitStep('pricing');
+        setInitStep('create-organization');
         return;
       }
 

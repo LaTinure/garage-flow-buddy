@@ -63,15 +63,15 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
 
   // Gestion du Super-Admin
   const handleSuperAdminCreated = () => {
-    console.log('✅ Super-Admin créé, passage au pricing');
-    setCurrentStep('pricing');
+    console.log('✅ Super-Admin créé, passage à la création de l\'admin d\'organisation');
+    setCurrentStep('create-admin');
   };
 
-  // Gestion du Pricing
+  // Gestion du Pricing (optionnel - peut être sauté) 
   const handlePlanSelection = (planId: string) => {
     console.log('✅ Plan sélectionné:', planId);
     setOrganizationData(prev => ({ ...prev, selectedPlan: planId }));
-    setCurrentStep('create-admin');
+    setCurrentStep('create-organization');
   };
 
   // Gestion de la création de l'admin
