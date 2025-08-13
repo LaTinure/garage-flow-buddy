@@ -103,7 +103,7 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
       console.log('✅ Admin créé avec succès:', authData);
 
       // Se connecter automatiquement avec le compte créé
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: adminData.email,
         password: adminData.password
       });
@@ -114,6 +114,28 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
       }
 
       console.log('✅ Connexion automatique réussie');
+
+      // Upsert dans public.users pour s'assurer que WorkflowGuard détecte l'admin
+      const authUserId = signInData?.user?.id || authData.user?.id;
+      if (authUserId) {
+        const { error: upsertError } = await supabase
+          .from('users')
+          .upsert(
+            {
+              id: authUserId,
+              email: adminData.email,
+              full_name: adminData.name,
+              phone: adminData.phone,
+              role: 'admin',
+              is_active: true
+            },
+            { onConflict: 'id' }
+          );
+        if (upsertError) {
+          console.error('❌ Erreur upsert public.users:', upsertError);
+          // On ne bloque pas le flux, mais on informe
+        }
+      }
 
       toast.success('Compte administrateur créé et connecté avec succès!');
 
@@ -149,6 +171,22 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
 
       if (!result?.success || !result.organization) {
         throw new Error(result?.error || 'Réponse invalide du serveur');
+      }
+
+      // Lier l'utilisateur admin à l'organisation dans public.users
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          const { error: linkError } = await supabase
+            .from('users')
+            .update({ organisation_id: result.organization.id })
+            .eq('id', user.id);
+          if (linkError) {
+            console.warn('⚠️ Erreur liaison organisation_id sur users:', linkError);
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Impossible de lier organisation_id (non bloquant):', e);
       }
 
       // Mettre à jour les données avec le code généré (valeur par défaut si absent)
