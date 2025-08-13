@@ -4,6 +4,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import NotificationCenter from './NotificationCenter';
 import UserMenu from './UserMenu';
 import styles from './UnifiedHeader.module.css';
+// UnifiedHeader.tsx - Ligne 5
+import AnimatedLogo from './AnimatedLogo';  // Supprimez le "from" en trop
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiHome,
@@ -82,6 +84,28 @@ const menuVariants = {
   hidden: { opacity: 0, y: -10, pointerEvents: 'none' as const },
   visible: { opacity: 1, y: 0, pointerEvents: 'auto' as const, transition: { duration: 0.2 } },
 } as const;
+
+// Styles WhatsApp constants
+// Remplacez les styles WhatsApp constants existants
+const whatsappHeaderStyle = `
+  fixed top-0 left-0 right-0 z-50 
+  w-screen min-w-full m-0 p-0
+  bg-gradient-to-r from-[#128C7E] to-[#075E54]
+  shadow-md
+  h-14
+`;
+
+const whatsappButtonStyle = `
+  p-2 rounded-full transition-all duration-300
+  bg-gradient-to-br from-[#128C7E] to-[#075E54]
+  text-white border-2 border-white/30
+  shadow-lg hover:shadow-xl
+  hover:from-[#075E54] hover:to-[#128C7E]
+  active:scale-95 active:shadow-inner
+  relative overflow-hidden
+  h-10 w-10
+  flex items-center justify-center
+`;
 
 const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   showUserMenu = true,
@@ -197,33 +221,29 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   const headerClass = useMemo(() => `${styles.header} ${isDark ? styles.dark : styles.light}`, [isDark]);
 
   return (
-    <motion.header className={headerClass} initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={spring}>
-      <div className={styles.inner}>
+    <motion.header
+      className={`${whatsappHeaderStyle} ${headerClass}`}
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={spring}
+    >
+      <div className="w-full h-full px-4 py-2 flex items-center justify-between">
         {/* Left: Back + Brand */}
         <div className={styles.leftSection}>
-          <button
-            type="button"
-            aria-label="Retour"
-            onClick={(e) => {
-              withRipple(e);
-              handleBack();
-            }}
-            className={styles.iconButton}
-          >
-            <ICONS.back />
-          </button>
 
-          <div className={styles.brand} aria-label={garageName} role="heading" aria-level={1}>
-            <motion.div className={styles.brandMark} whileHover={{ scale: 1.05 }} transition={spring} />
+
+
+          <div className={styles.brand}>
+            <AnimatedLogo />
             <div className={styles.brandText}>
-              <span className={styles.brandTitle}>{garageName}</span>
-              <span className={styles.brandSubtitle}>Excellence Automobile</span>
+              <span className="text-white font-bold">{garageName}</span>
+              <span className="text-white/80 text-sm">Excellence Automobile</span>
             </div>
           </div>
         </div>
 
-        {/* Center: Navigation */}
-        <nav className={styles.nav} aria-label="Navigation principale">
+        {/* Center: Navigation - Gardez votre navigation existante */}
+        <nav className={styles.nav}>
           <ErrorBoundary onError={(msg) => setNavError(msg)}>
             <ul className={styles.navList} role="menubar">
               {NAV_ITEMS.map((item) => (
@@ -295,13 +315,13 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
               type="button"
               aria-label="Notifications"
               onClick={() => setIsNotificationOpen(true)}
-              className={styles.iconButton}
+              className={whatsappButtonStyle}
             >
-              <ICONS.bell />
+              <ICONS.bell className="relative z-10" />
               {!notifLoading && unreadNotifications > 0 && (
-                <span className={styles.badge} aria-label={`${unreadNotifications} notifications non lues`}>{
-                  unreadNotifications > 99 ? '99+' : unreadNotifications
-                }</span>
+                <span className="absolute -top-1 -right-1 bg-[#25D366] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                </span>
               )}
             </button>
           </div>
@@ -315,9 +335,13 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                 withRipple(e);
                 toggleTheme();
               }}
-              className={styles.iconButton}
+              className={whatsappButtonStyle}
             >
-              {isDark ? <ICONS.sun /> : <ICONS.moon />}
+              {isDark ? (
+                <ICONS.sun className="relative z-10" />
+              ) : (
+                <ICONS.moon className="relative z-10" />
+              )}
             </button>
           )}
 
@@ -325,7 +349,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
           {showUserMenu ? (
             <UserMenu />
           ) : (
-            <Button variant="ghost" size="sm" className={styles.skeletonBtn} aria-disabled>
+            <Button variant="ghost" size="sm" className={styles.skeletonBtn}>
               Chargement...
             </Button>
           )}
@@ -335,13 +359,18 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
         <motion.button
           type="button"
           aria-label={isMobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-          className={`${styles.fab} ${isMobile ? styles.fabVisible : styles.fabHidden}`}
+          className={`${whatsappButtonStyle} ${isMobile ? styles.fabVisible : styles.fabHidden
+            }`}
           onClick={() => setIsMobileMenuOpen((v) => !v)}
           whileTap={{ scale: 0.95 }}
-          animate={isMobileMenuOpen ? { rotate: 180, scale: 1.05 } : { rotate: 0, scale: 1 }}
+          animate={isMobileMenuOpen ? { rotate: 180 } : { rotate: 0 }}
           transition={spring}
         >
-          {isMobileMenuOpen ? <ICONS.close /> : <ICONS.menu />}
+          {isMobileMenuOpen ? (
+            <ICONS.close className="relative z-10" />
+          ) : (
+            <ICONS.menu className="relative z-10" />
+          )}
         </motion.button>
       </div>
 
@@ -420,7 +449,7 @@ class ErrorBoundary extends React.Component<{ onError?: (message: string) => voi
         <div role="alert" className={styles.navError}>
           Une erreur est survenue dans la navigation.
         </div>
-      );
+      )
     }
     return this.props.children as any;
   }

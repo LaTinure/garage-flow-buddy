@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { FileService } from '@/integrations/supabase/fileService';
 
 interface AdminCRUDModalProps {
   isOpen: boolean;
@@ -46,6 +47,7 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   // Génération automatique du slug à chaque changement du nom
   useEffect(() => {
@@ -143,6 +145,10 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setAvatarFile(file);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,6 +216,14 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
       }
 
       if (authData.user) {
+        let uploadedAvatarUrl: string | undefined;
+        // Upload avatar si fourni
+        if (avatarFile) {
+          const uploadResult = await FileService.uploadUserAvatar(avatarFile, authData.user.id);
+          if (uploadResult.success && uploadResult.url) {
+            uploadedAvatarUrl = uploadResult.url;
+          }
+        }
         // Créer l'entrée dans la table users
         const { error: userError } = await supabase
           .from('users')
@@ -221,7 +235,8 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
             phone: formData.phone,
             role: 'admin',
             organisation_id: organisationData.id,
-            est_actif: true
+            est_actif: true,
+            avatar_url: uploadedAvatarUrl
           });
 
         if (userError) {
@@ -250,7 +265,7 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={() => { }}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900 dark:to-indigo-800 border-blue-200 dark:border-blue-700">
         <DialogHeader className="text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center animate-pulse">
@@ -288,6 +303,10 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="avatar">Avatar</Label>
+                <Input id="avatar" type="file" accept="image/*" onChange={handleAvatarUpload} />
+              </div>
               {/* Nom et Prénom */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -301,9 +320,8 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
                       type="text"
                       value={formData.prenom}
                       onChange={(e) => handleInputChange('prenom', e.target.value)}
-                      className={`pl-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${
-                        errors.prenom ? 'border-red-500' : ''
-                      }`}
+                      className={`pl-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${errors.prenom ? 'border-red-500' : ''
+                        }`}
                       placeholder="Votre prénom"
                     />
                   </div>
@@ -327,9 +345,8 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
                         setErrors(prev => ({ ...prev, nom: '' }));
                       }}
                       placeholder="Nom unique de l'organisation"
-                      className={`pl-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${
-                        errors.nom ? 'border-red-500' : ''
-                      }`}
+                      className={`pl-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${errors.nom ? 'border-red-500' : ''
+                        }`}
                     />
                   </div>
                   {errors.nom && (
@@ -360,9 +377,8 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`pl-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${
-                      errors.email ? 'border-red-500' : ''
-                    }`}
+                    className={`pl-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${errors.email ? 'border-red-500' : ''
+                      }`}
                     placeholder="admin@garage.com"
                   />
                 </div>
@@ -383,9 +399,8 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className={`pl-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${
-                      errors.phone ? 'border-red-500' : ''
-                    }`}
+                    className={`pl-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${errors.phone ? 'border-red-500' : ''
+                      }`}
                     placeholder="+225 XX XX XX XX XX"
                   />
                 </div>
@@ -406,9 +421,8 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    className={`pl-10 pr-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${
-                      errors.password ? 'border-red-500' : ''
-                    }`}
+                    className={`pl-10 pr-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${errors.password ? 'border-red-500' : ''
+                      }`}
                     placeholder="••••••••"
                   />
                   <Button
@@ -442,9 +456,8 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    className={`pl-10 pr-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${
-                      errors.confirmPassword ? 'border-red-500' : ''
-                    }`}
+                    className={`pl-10 pr-10 border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400 ${errors.confirmPassword ? 'border-red-500' : ''
+                      }`}
                     placeholder="••••••••"
                   />
                   <Button

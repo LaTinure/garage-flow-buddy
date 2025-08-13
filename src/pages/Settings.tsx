@@ -82,7 +82,7 @@ const Settings: React.FC = () => {
 
       try {
         setLoading(true);
-        
+
         // Récupérer les paramètres depuis la table user_settings
         const { data: settingsData, error } = await supabase
           .from('user_settings')
@@ -136,22 +136,25 @@ const Settings: React.FC = () => {
     try {
       setSaving(true);
 
-      // Créer ou mettre à jour les paramètres dans Supabase
+      // Upsert avec valeurs par défaut
       const { error } = await supabase
         .from('user_settings')
         .upsert({
           user_id: authUser.id,
-          notifications_email: settings.notifications.email,
-          notifications_push: settings.notifications.push,
-          notifications_sms: settings.notifications.sms,
-          theme: settings.display.theme,
-          language: settings.display.language,
-          currency: settings.display.currency,
-          two_factor: settings.security.twoFactor,
-          session_timeout: settings.security.sessionTimeout,
-          photo_evidence_enabled: settings.photoEvidence.enabled,
-          min_photos: settings.photoEvidence.minPhotos,
-          max_file_size: settings.photoEvidence.maxFileSize
+          notifications_email: settings.notifications.email || true, // Valeur par défaut
+          notifications_push: settings.notifications.push || true,
+          notifications_sms: settings.notifications.sms || false,
+          theme: settings.display.theme || 'light',
+          language: settings.display.language || 'fr',
+          currency: settings.display.currency || 'XOF',
+          two_factor: settings.security.twoFactor || false,
+          session_timeout: settings.security.sessionTimeout || 30,
+          photo_evidence_enabled: settings.photoEvidence.enabled || true,
+          min_photos: settings.photoEvidence.minPhotos || 2,
+          max_file_size: settings.photoEvidence.maxFileSize || 5,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) {

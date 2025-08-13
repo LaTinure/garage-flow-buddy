@@ -1,9 +1,12 @@
 /* Reset complet */
-html, body, #root {
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100vh; /* Au moins la hauteur d'écran */
+  min-height: 100vh;
+  /* Au moins la hauteur d'écran */
 }
 
 /* Conteneur principal */
@@ -11,15 +14,18 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   width: 100vw;
-  min-height: 100vh; /* Permet l'expansion verticale */
-  overflow-x: hidden; /* Bloque le défilement horizontal */
+  min-height: 100vh;
+  /* Permet l'expansion verticale */
+  overflow-x: hidden;
+  /* Bloque le défilement horizontal */
 }
 
 /* Contenu principal flexible */
 .main-content {
   flex: 1;
   width: 100%;
-  padding: 0; /* Ajustez si besoin */
+  padding: 0;
+  /* Ajustez si besoin */
 }
 
 /* Styles des logos (conservés) */
@@ -40,8 +46,13 @@ html, body, #root {
 
 /* Animation (conservée) */
 @keyframes logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -53,8 +64,10 @@ html, body, #root {
 /* Adaptation des cartes */
 .card {
   width: 100%;
-  min-height: 100%; /* S'adapte au contenu */
-  padding: 0; /* Ajustez si nécessaire */
+  min-height: 100%;
+  /* S'adapte au contenu */
+  padding: 0;
+  /* Ajustez si nécessaire */
 }
 
 /* Texte en bas de page */
