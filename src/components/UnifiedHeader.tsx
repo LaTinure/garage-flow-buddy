@@ -98,6 +98,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   const [garageName, setGarageName] = useState<string>('Garage Abidjan');
   const [navError, setNavError] = useState<string | null>(null);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [isClientsOpen, setIsClientsOpen] = useState(false);
 
   // Smart viewport detection
   useEffect(() => {
@@ -243,25 +244,40 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                     </motion.div>
                   ) : (
                     <div className={styles.navDropdown}>
-                      <button className={styles.navItem} aria-haspopup="true" aria-expanded="false">
+                      <button
+                        className={styles.navItem}
+                        aria-haspopup="true"
+                        aria-expanded={isClientsOpen}
+                        onClick={() => setIsClientsOpen((v) => !v)}
+                      >
                         {IconFor(item.icon)}
                         <span className={styles.navLabel}>{item.name}</span>
-                        <ICONS.chevrondown className={styles.chevron} />
+                        {isClientsOpen ? <ICONS.chevrondown style={{ transform: 'rotate(180deg)' }} className={styles.chevron} /> : <ICONS.chevrondown className={styles.chevron} />}
                       </button>
-                      <motion.ul className={styles.dropdownMenu} variants={menuVariants} initial="hidden" whileHover="visible">
-                        {item.children?.map((child) => (
-                          <li key={child.path} role="none">
-                            <Link
-                              to={child.path}
-                              role="menuitem"
-                              className={`${styles.dropdownItem} ${isActive(child.path) ? styles.activeDropdown : ''}`}
-                              onClick={withRipple}
-                            >
-                              {child.name}
-                            </Link>
-                          </li>
-                        ))}
-                      </motion.ul>
+                      <AnimatePresence>
+                        {isClientsOpen && (
+                          <motion.ul
+                            className={styles.dropdownMenu}
+                            variants={menuVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="hidden"
+                          >
+                            {item.children?.map((child) => (
+                              <li key={child.path} role="none">
+                                <Link
+                                  to={child.path}
+                                  role="menuitem"
+                                  className={`${styles.dropdownItem} ${isActive(child.path) ? styles.activeDropdown : ''}`}
+                                  onClick={withRipple}
+                                >
+                                  {child.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </motion.ul>
+                        )}
+                      </AnimatePresence>
                     </div>
                   )}
                 </li>
