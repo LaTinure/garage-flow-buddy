@@ -1,296 +1,413 @@
-import React, { useState, useEffect } from 'react';
-import { Car, Wrench, Zap, Sun, Moon, Bell, Menu, X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
-import UserMenu from './UserMenu';
 import NotificationCenter from './NotificationCenter';
-import { Link } from 'react-router-dom';
+import UserMenu from './UserMenu';
+import styles from './UnifiedHeader.module.css';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+  FiHome,
+  FiUsers,
+  FiSettings,
+  FiTool,
+  FiTruck,
+  FiBox,
+  FiBell,
+  FiSun,
+  FiMoon,
+  FiMenu,
+  FiX,
+  FiChevronDown,
+  FiChevronLeft,
+} from 'react-icons/fi';
+import { Button } from '@/components/ui/button';
 
 interface UnifiedHeaderProps {
   showUserMenu?: boolean;
   showThemeToggle?: boolean;
 }
 
+interface NavItem {
+  name: string;
+  path?: string;
+  icon?: keyof typeof ICONS;
+  children?: { name: string; path: string }[];
+}
+
+const ICONS = {
+  home: FiHome,
+  clients: FiUsers,
+  vehicules: FiTruck,
+  reparations: FiTool,
+  stock: FiBox,
+  settings: FiSettings,
+  bell: FiBell,
+  sun: FiSun,
+  moon: FiMoon,
+  menu: FiMenu,
+  close: FiX,
+  back: FiChevronLeft,
+  chevrondown: FiChevronDown,
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { name: 'Tableau de bord', path: '/dashboard', icon: 'home' },
+  {
+    name: 'Clients',
+    icon: 'clients',
+    children: [
+      { name: 'Liste des clients', path: '/clients/liste' },
+      { name: 'Ajouter un client', path: '/clients/ajouter' },
+      { name: 'Historique', path: '/clients/historique' },
+    ],
+  },
+  { name: 'Véhicules', path: '/vehicules', icon: 'vehicules' },
+  { name: 'Réparations', path: '/reparations', icon: 'reparations' },
+  { name: 'Stock', path: '/stock', icon: 'stock' },
+];
+
+const spring = { type: 'spring', stiffness: 400, damping: 30 } as const;
+
+const itemVariants = {
+  initial: { opacity: 0, y: -6 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+} as const;
+
+const underlineVariants = {
+  initial: { width: 0, opacity: 0 },
+  animate: { width: '100%', opacity: 1, transition: { duration: 0.25 } },
+} as const;
+
+const menuVariants = {
+  hidden: { opacity: 0, y: -10, pointerEvents: 'none' as const },
+  visible: { opacity: 1, y: 0, pointerEvents: 'auto' as const, transition: { duration: 0.2 } },
+} as const;
+
 const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   showUserMenu = true,
-  showThemeToggle = true
+  showThemeToggle = true,
 }) => {
   const { isDark, toggleTheme } = useTheme();
-  const [garageData, setGarageData] = useState<any>({});
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
+  const [garageName, setGarageName] = useState<string>('Garage Abidjan');
+  const [navError, setNavError] = useState<string | null>(null);
+  const [notifLoading, setNotifLoading] = useState(false);
 
+  // Smart viewport detection
   useEffect(() => {
-    const stored = localStorage.getItem('garageData');
-    if (stored) {
-      setGarageData(JSON.parse(stored));
-    }
-  }, []);
-
-  // Charger le nombre de notifications non lues
-  useEffect(() => {
-    const savedNotifications = localStorage.getItem('notifications');
-    if (savedNotifications) {
-      const notifications = JSON.parse(savedNotifications);
-      const unreadCount = notifications.filter((n: any) => !n.read).length;
-      setUnreadNotifications(unreadCount);
-    }
-  }, [isNotificationOpen]); // Recharger quand le modal se ferme
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) setIsMobileMenuOpen(false);
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    const media = window.matchMedia('(max-width: 767px)');
+    const mediaListener = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    window.addEventListener('resize', onResize);
+    media.addEventListener('change', mediaListener);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      media.removeEventListener('change', mediaListener);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Load garage data safely
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.classList.add('menu-open');
-    } else {
-      document.body.classList.remove('menu-open');
+    try {
+      const stored = localStorage.getItem('garageData');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.name) setGarageName(parsed.name);
+      }
+    } catch {
+      /* ignore */
     }
+  }, []);
+
+  // Notifications count with loading state
+  useEffect(() => {
+    setNotifLoading(true);
+    try {
+      const raw = localStorage.getItem('notifications');
+      if (raw) {
+        const notifications = JSON.parse(raw) as { read?: boolean }[];
+        setUnreadNotifications(notifications.filter((n) => !n.read).length);
+      } else {
+        setUnreadNotifications(0);
+      }
+    } catch {
+      setUnreadNotifications(0);
+    } finally {
+      setNotifLoading(false);
+    }
+  }, [isNotificationOpen]);
+
+  // Body class lock for mobile menu
+  useEffect(() => {
+    if (isMobileMenuOpen) document.body.classList.add('menu-open');
+    else document.body.classList.remove('menu-open');
     return () => document.body.classList.remove('menu-open');
   }, [isMobileMenuOpen]);
 
+  const isActive = (path?: string) => (path ? location.pathname === path : false);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    if (location.pathname !== '/') navigate('/', { replace: true });
+  };
+
+  const ActiveUnderline: React.FC<{ active: boolean }> = ({ active }) => (
+    <AnimatePresence>
+      {active && (
+        <motion.div
+          className={styles.activeUnderline}
+          initial="initial"
+          animate="animate"
+          exit="initial"
+          variants={underlineVariants}
+          layoutId="nav-underline"
+        />
+      )}
+    </AnimatePresence>
+  );
+
+  const IconFor = (key?: keyof typeof ICONS) => {
+    if (!key) return null;
+    const Cmp = ICONS[key];
+    return <Cmp aria-hidden className={styles.navIcon} />;
+  };
+
+  // Ripple effect utility
+  const withRipple = (e: React.MouseEvent<HTMLElement>) => {
+    const target = e.currentTarget as HTMLElement;
+    const ripple = document.createElement('span');
+    ripple.className = styles.ripple;
+    const rect = target.getBoundingClientRect();
+    ripple.style.left = `${e.clientX - rect.left}px`;
+    ripple.style.top = `${e.clientY - rect.top}px`;
+    target.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  };
+
+  const headerClass = useMemo(() => `${styles.header} ${isDark ? styles.dark : styles.light}`, [isDark]);
+
   return (
-    <header className={`w-full shadow-2xl animate-fade-in sticky top-0 z-40 transition-colors duration-500 ${
-      isDark
-        ? 'bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800'
-        : 'bg-gradient-to-r from-green-600 via-green-700 to-green-800'
-    }`}>
-      {/* Fond animé subtil */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-ping" />
-        <div className="absolute top-32 right-16 w-16 h-16 bg-white/5 rounded-full animate-pulse" />
-        <div className="absolute bottom-8 left-1/3 w-12 h-12 bg-white/8 rounded-full animate-bounce" />
-      </div>
+    <motion.header className={headerClass} initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={spring}>
+      <div className={styles.inner}>
+        {/* Left: Back + Brand */}
+        <div className={styles.leftSection}>
+          <button
+            type="button"
+            aria-label="Retour"
+            onClick={(e) => {
+              withRipple(e);
+              handleBack();
+            }}
+            className={styles.iconButton}
+          >
+            <ICONS.back />
+          </button>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between">
-          {/* Logo et informations garage */}
-          <div className="flex items-center space-x-6">
-            {/* Logo animé */}
-            <div className="relative group">
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl border transition-all duration-500 hover:scale-110 hover:rotate-3 ${
-                isDark
-                  ? 'bg-white/10 backdrop-blur-md border-white/20'
-                  : 'bg-white/25 backdrop-blur-md border-white/40'
-              }`}>
-                <div className="relative">
-                  <Car className="w-8 h-8 text-white animate-pulse" />
-                  <div className="absolute -top-1 -right-1">
-                    <Wrench className="w-5 h-5 text-yellow-300 animate-bounce" />
-                  </div>
-                </div>
-              </div>
-              <div className="absolute -bottom-2 -right-2">
-                <Zap className="w-4 h-4 text-yellow-400 animate-ping" />
-              </div>
+          <div className={styles.brand} aria-label={garageName} role="heading" aria-level={1}>
+            <motion.div className={styles.brandMark} whileHover={{ scale: 1.05 }} transition={spring} />
+            <div className={styles.brandText}>
+              <span className={styles.brandTitle}>{garageName}</span>
+              <span className={styles.brandSubtitle}>Excellence Automobile</span>
             </div>
-
-            {/* Informations du garage */}
-            <div className="flex flex-col space-y-1">
-              <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-lg transition-all duration-300 hover:scale-105">
-                {garageData.name || 'Garage Abidjan'}
-              </h1>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50" />
-                <span className="text-sm text-white/90 font-medium">
-                  Excellence Automobile
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation centrale */}
-          <div className="hidden lg:flex items-center space-x-6">
-            <NavigationMenu>
-              <NavigationMenuList className="flex gap-4">
-               
-                <NavigationMenuItem>
-                  <Link to="/dashboard">
-                    <NavigationMenuLink className={`${navigationMenuTriggerStyle()} ${isDark ? 'text-white hover:text-green-300' : 'text-black font-bold hover:text-green-700'} transition-colors`}>
-                      Tableau de bord
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <NavigationMenuLink className={`${navigationMenuTriggerStyle()} ${isDark ? 'text-white hover:text-green-300' : 'text-black font-bold hover:text-green-700'} transition-colors`}>
-                        Clients
-                      </NavigationMenuLink>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <Link to="/clients/liste">
-                        <DropdownMenuItem>Liste des clients</DropdownMenuItem>
-                      </Link>
-                      <Link to="/clients/ajouter">
-                        <DropdownMenuItem>Ajouter un client</DropdownMenuItem>
-                      </Link>
-                      <Link to="/clients/historique">
-                        <DropdownMenuItem>Historique</DropdownMenuItem>
-                      </Link>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <Link to="/vehicules">
-                    <NavigationMenuLink className={`${navigationMenuTriggerStyle()} ${isDark ? 'text-white hover:text-green-300' : 'text-black font-bold hover:text-green-700'} transition-colors`}>
-                      Véhicules
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <Link to="/reparations">
-                    <NavigationMenuLink className={`${navigationMenuTriggerStyle()} ${isDark ? 'text-white hover:text-green-300' : 'text-black font-bold hover:text-green-700'} transition-colors`}>
-                      Réparations
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <Link to="/stock">
-                    <NavigationMenuLink className={`${navigationMenuTriggerStyle()} ${isDark ? 'text-white hover:text-green-300' : 'text-black font-bold hover:text-green-700'} transition-colors`}>
-                      Stock
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
-          </div>
-
-          {/* Menu mobile */}
-          <div className="lg:hidden flex items-center">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="p-2 text-white hover:bg-white/10"
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                >
-                  {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="top" className="pt-16 bg-opacity-95 backdrop-blur-md max-w-md mx-auto">
-                <div className="flex flex-col space-y-4">
-                  <Link 
-                    to="/dashboard" 
-                    className="text-lg font-medium px-4 py-2 rounded-md hover:bg-white/10 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Tableau de bord
-                  </Link>
-                  <div className="flex flex-col space-y-2 px-4">
-                    <span className="text-lg font-medium">Clients</span>
-                    <Link 
-                      to="/clients/liste" 
-                      className="pl-4 py-2 rounded-md hover:bg-white/10 transition-colors"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Liste des clients
-                    </Link>
-                    <Link 
-                      to="/clients/ajouter" 
-                      className="pl-4 py-2 rounded-md hover:bg-white/10 transition-colors"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Ajouter un client
-                    </Link>
-                  </div>
-                  <Link 
-                    to="/vehicules" 
-                    className="text-lg font-medium px-4 py-2 rounded-md hover:bg-white/10 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Véhicules
-                  </Link>
-                  <Link 
-                    to="/reparations" 
-                    className="text-lg font-medium px-4 py-2 rounded-md hover:bg-white/10 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Réparations
-                  </Link>
-                  <Link 
-                    to="/stock" 
-                    className="text-lg font-medium px-4 py-2 rounded-md hover:bg-white/10 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Stock
-                  </Link>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-
-          {/* Contrôles */}
-          <div className="flex items-center space-x-4">
-            {/* Bouton notifications */}
-            <div className="relative">
-              <button
-                onClick={() => setIsNotificationOpen(true)}
-                className={`p-2 rounded-lg transition-colors duration-300 relative ${
-                  isDark
-                    ? 'bg-gray-700 text-white hover:bg-gray-600'
-                    : 'bg-white/25 text-white hover:bg-white/35 shadow-lg'
-                }`}
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotifications > 0 && (
-                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center">
-                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                  </Badge>
-                )}
-              </button>
-            </div>
-
-            {/* Toggle de thème */}
-            {showThemeToggle && (
-              <button
-                onClick={toggleTheme}
-                className={`p-2 rounded-lg transition-colors duration-300 ${
-                  isDark
-                    ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600'
-                    : 'bg-white/25 text-white hover:bg-white/35 shadow-lg'
-                }`}
-              >
-                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-            )}
-
-            {/* Menu utilisateur */}
-            {showUserMenu && <UserMenu />}
           </div>
         </div>
+
+        {/* Center: Navigation */}
+        <nav className={styles.nav} aria-label="Navigation principale">
+          <ErrorBoundary onError={(msg) => setNavError(msg)}>
+            <ul className={styles.navList} role="menubar">
+              {NAV_ITEMS.map((item) => (
+                <li key={item.name} role="none" className={styles.navItemWrapper}>
+                  {item.path ? (
+                    <motion.div variants={itemVariants} initial="initial" animate="animate" whileHover={{ scale: 1.05 }}>
+                      <Link
+                        to={item.path}
+                        role="menuitem"
+                        aria-current={isActive(item.path) ? 'page' : undefined}
+                        className={`${styles.navItem} ${isActive(item.path) ? styles.active : ''}`}
+                        onClick={withRipple}
+                      >
+                        {IconFor(item.icon)}
+                        <span className={styles.navLabel}>{item.name}</span>
+                        <ActiveUnderline active={isActive(item.path)} />
+                      </Link>
+                    </motion.div>
+                  ) : (
+                    <div className={styles.navDropdown}>
+                      <button className={styles.navItem} aria-haspopup="true" aria-expanded="false">
+                        {IconFor(item.icon)}
+                        <span className={styles.navLabel}>{item.name}</span>
+                        <ICONS.chevrondown className={styles.chevron} />
+                      </button>
+                      <motion.ul className={styles.dropdownMenu} variants={menuVariants} initial="hidden" whileHover="visible">
+                        {item.children?.map((child) => (
+                          <li key={child.path} role="none">
+                            <Link
+                              to={child.path}
+                              role="menuitem"
+                              className={`${styles.dropdownItem} ${isActive(child.path) ? styles.activeDropdown : ''}`}
+                              onClick={withRipple}
+                            >
+                              {child.name}
+                            </Link>
+                          </li>
+                        ))}
+                      </motion.ul>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </ErrorBoundary>
+          {navError && <span className={styles.navError} role="alert">{navError}</span>}
+        </nav>
+
+        {/* Right: Controls */}
+        <div className={styles.rightSection}>
+          {/* Notifications */}
+          <div className={styles.badgeWrapper}>
+            <button
+              type="button"
+              aria-label="Notifications"
+              onClick={() => setIsNotificationOpen(true)}
+              className={styles.iconButton}
+            >
+              <ICONS.bell />
+              {!notifLoading && unreadNotifications > 0 && (
+                <span className={styles.badge} aria-label={`${unreadNotifications} notifications non lues`}>{
+                  unreadNotifications > 99 ? '99+' : unreadNotifications
+                }</span>
+              )}
+            </button>
+          </div>
+
+          {/* Theme toggle */}
+          {showThemeToggle && (
+            <button
+              type="button"
+              aria-label="Changer de thème"
+              onClick={(e) => {
+                withRipple(e);
+                toggleTheme();
+              }}
+              className={styles.iconButton}
+            >
+              {isDark ? <ICONS.sun /> : <ICONS.moon />}
+            </button>
+          )}
+
+          {/* User menu */}
+          {showUserMenu ? (
+            <UserMenu />
+          ) : (
+            <Button variant="ghost" size="sm" className={styles.skeletonBtn} aria-disabled>
+              Chargement...
+            </Button>
+          )}
+        </div>
+
+        {/* FAB for mobile */}
+        <motion.button
+          type="button"
+          aria-label={isMobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+          className={`${styles.fab} ${isMobile ? styles.fabVisible : styles.fabHidden}`}
+          onClick={() => setIsMobileMenuOpen((v) => !v)}
+          whileTap={{ scale: 0.95 }}
+          animate={isMobileMenuOpen ? { rotate: 180, scale: 1.05 } : { rotate: 0, scale: 1 }}
+          transition={spring}
+        >
+          {isMobileMenuOpen ? <ICONS.close /> : <ICONS.menu />}
+        </motion.button>
       </div>
 
-      {/* Centre de notifications */}
-      <NotificationCenter
-        isOpen={isNotificationOpen}
-        onClose={() => setIsNotificationOpen(false)}
-      />
-    </header>
+      {/* Mobile sheet/menu */}
+      <AnimatePresence>
+        {isMobile && isMobileMenuOpen && (
+          <motion.div
+            className={styles.mobileSheet}
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+          >
+            <ul className={styles.mobileList} role="menu">
+              {NAV_ITEMS.map((item) => (
+                <li key={item.name} role="none">
+                  {item.path ? (
+                    <Link
+                      to={item.path}
+                      role="menuitem"
+                      className={`${styles.mobileItem} ${isActive(item.path) ? styles.active : ''}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {IconFor(item.icon)}
+                      <span>{item.name}</span>
+                    </Link>
+                  ) : (
+                    <div className={styles.mobileGroup}>
+                      <div className={styles.mobileGroupTitle}>
+                        {IconFor(item.icon)}
+                        <span>{item.name}</span>
+                      </div>
+                      <ul className={styles.mobileSubList}>
+                        {item.children?.map((child) => (
+                          <li key={child.path}>
+                            <Link
+                              to={child.path}
+                              role="menuitem"
+                              className={`${styles.mobileSubItem} ${isActive(child.path) ? styles.active : ''}`}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              {child.name}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Notification Center */}
+      <NotificationCenter isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
+    </motion.header>
   );
 };
 
-export default UnifiedHeader;
+class ErrorBoundary extends React.Component<{ onError?: (message: string) => void; children: React.ReactNode }, { hasError: boolean }>{
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    this.props.onError?.(error.message);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div role="alert" className={styles.navError}>
+          Une erreur est survenue dans la navigation.
+        </div>
+      );
+    }
+    return this.props.children as any;
+  }
+}
+
+export default React.memo(UnifiedHeader);
