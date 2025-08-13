@@ -31,7 +31,6 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
       if (superAdminError) {
         console.error('❌ Erreur vérification super admin:', superAdminError);
-        // If table doesn't exist, start with super admin creation
         setWorkflowState('needs-init');
         setInitStep('super-admin');
         return;
@@ -53,7 +52,6 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
       if (orgError) {
         console.error('❌ Erreur vérification organisations:', orgError);
-        // If table doesn't exist or has issues, start with organization creation
         setWorkflowState('needs-init');
         setInitStep('create-organization');
         return;
@@ -68,10 +66,28 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
       console.log('✅ Organisation trouvée');
 
-      // 3. Vérifier si des utilisateurs admin existent
+      // 3. Vérifier la session utilisateur AVANT de compter les admins (RLS)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('❌ Erreur session:', sessionError);
+        setWorkflowState('needs-auth');
+        return;
+      }
+
+      if (!session) {
+        console.log('⚠️ Aucune session, redirection vers auth');
+        setWorkflowState('needs-auth');
+        return;
+      }
+
+      console.log('✅ Session utilisateur valide');
+
+      // 4. Vérifier s'il existe au moins un admin (ou propriétaire)
       const { count: adminCount, error: adminError } = await supabase
         .from('users')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .in('role', ['admin', 'proprietaire'] as any);
 
       if (adminError) {
         console.error('❌ Erreur vérification admins:', adminError);
@@ -89,48 +105,30 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
       console.log('✅ Admins trouvés');
 
-      // 4. Vérifier la session utilisateur (seulement si tout le reste est OK)
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        console.error('❌ Erreur session:', sessionError);
-        setWorkflowState('needs-auth');
-        return;
-      }
-
-      if (!session) {
-        console.log('⚠️ Aucune session, redirection vers auth');
-        setWorkflowState('needs-auth');
-        return;
-      }
-
-      console.log('✅ Session utilisateur valide');
-
       // 5. Vérifier si l'utilisateur a une organisation sélectionnée
       const storedOrg = localStorage.getItem('current_org');
       const storedOrgCode = localStorage.getItem('org_code');
 
       if (!storedOrg || !storedOrgCode) {
         console.log('⚠️ Aucune organisation sélectionnée, affichage sélection');
-        // Ne pas rediriger vers auth mais afficher la sélection d'organisation
-        setWorkflowState('ready'); // Permettre l'accès à OrganizationSelect
+        setWorkflowState('ready');
         return;
       }
 
-      // Vérifier la validité de l'organisation
+      // 6. Vérifier la validité de l'organisation sélectionnée
       try {
-        const { data: org, error: orgError } = await supabase
+        const { data: org, error: orgValidError } = await supabase
           .from('organisations')
           .select('id, code')
           .eq('id', storedOrg)
           .eq('code', storedOrgCode)
           .single();
 
-        if (orgError || !org) {
+        if (orgValidError || !org) {
           console.log('⚠️ Organisation invalide, nettoyage et affichage sélection');
           localStorage.removeItem('current_org');
           localStorage.removeItem('org_code');
-          setWorkflowState('ready'); // Permettre l'accès à OrganizationSelect
+          setWorkflowState('ready');
           return;
         }
 
@@ -139,7 +137,7 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
         console.error('❌ Erreur validation organisation:', error);
         localStorage.removeItem('current_org');
         localStorage.removeItem('org_code');
-        setWorkflowState('ready'); // Permettre l'accès à OrganizationSelect
+        setWorkflowState('ready');
         return;
       }
 
@@ -149,7 +147,6 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
     } catch (error) {
       console.error('❌ Erreur lors de la vérification du workflow:', error);
-      // En cas d'erreur, forcer l'initialisation
       setWorkflowState('needs-init');
       setInitStep('super-admin');
     }
@@ -159,33 +156,13 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
     console.log('✅ Initialisation terminée');
     toast.success('Configuration terminée ! Vous pouvez maintenant vous connecter.');
     setWorkflowState('ready');
-    // Rediriger vers auth pour que l'utilisateur se connecte
     navigate('/auth');
   };
 
-  const checkAdminStatus = async () => {
-    try {
-      const { hasAdmins, error } = await checkForExistingAdmins();
-
-      if (error) {
-        console.warn('⚠️ Erreur vérification admins:', error);
-        // Continuer avec hasAdmins = false en cas d'erreur
-        return false;
-      }
-
-      return hasAdmins;
-    } catch (error) {
-      console.error('❌ Exception vérification admins:', error);
-      return false;
-    }
-  };
-
-  // État de chargement
   if (workflowState === 'loading') {
     return <SplashScreen onComplete={() => { }} />;
   }
 
-  // Besoin d'initialisation (PRIORITÉ ABSOLUE)
   if (workflowState === 'needs-init') {
     console.log('🚀 Lancement du workflow d\'initialisation - Étape:', initStep);
     return (
@@ -197,7 +174,6 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
     );
   }
 
-  // Besoin d'authentification (seulement après initialisation complète)
   if (workflowState === 'needs-auth') {
     console.log('🔐 Redirection vers l\'authentification');
     navigate('/auth');
@@ -211,12 +187,10 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
     );
   }
 
-  // Prêt - afficher le contenu
   if (workflowState === 'ready') {
     return <>{children}</>;
   }
 
-  // Fallback - forcer l'initialisation
   console.log('⚠️ État inconnu, forcer l\'initialisation');
   setWorkflowState('needs-init');
   setInitStep('super-admin');
@@ -228,22 +202,6 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
     />
   );
 };
-
-async function checkForExistingAdmins() {
-  try {
-    const { count, error } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true });
-
-    if (error) {
-      return { hasAdmins: false, error };
-    }
-
-    return { hasAdmins: !!count && count > 0, error: null };
-  } catch (error) {
-    return { hasAdmins: false, error };
-  }
-}
 
 export default WorkflowGuard;
 
