@@ -6,12 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Shield, 
-  Clock, 
-  RefreshCw, 
-  X, 
-  Check, 
+import {
+  Shield,
+  Clock,
+  RefreshCw,
+  X,
+  Check,
   Phone,
   Building,
   User
@@ -63,7 +63,7 @@ const SmsValidationModal: React.FC<SmsValidationModalProps> = ({
   const handleResendCode = async () => {
     setIsLoading(true);
     setError('');
-    
+
     try {
       // Simulation d'envoi de SMS
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -89,7 +89,7 @@ const SmsValidationModal: React.FC<SmsValidationModalProps> = ({
     try {
       // Simulation de validation
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       if (smsCode === '123456') { // Code de démonstration
         toast.success('Validation réussie !');
         onValidate();
@@ -138,9 +138,28 @@ const SmsValidationModal: React.FC<SmsValidationModalProps> = ({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Code Organisation :</span>
-                <Badge variant="outline" className="font-mono text-xs">
-                  {organizationCode}
-                </Badge>
+                <div className="flex items-center">
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {organizationCode}
+                  </Badge>
+                  <span
+                    role="button"
+                    aria-label="Copier le code organisation"
+                    title="Copier"
+                    className="ml-2 cursor-pointer select-none"
+                    style={{ fontSize: 20, lineHeight: '20px' }}
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(organizationCode || '');
+                        toast.success('Code copié dans le presse-papiers');
+                      } catch (e) {
+                        toast.error('Impossible de copier le code');
+                      }
+                    }}
+                  >
+                    📋
+                  </span>
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Administrateur :</span>
@@ -161,7 +180,7 @@ const SmsValidationModal: React.FC<SmsValidationModalProps> = ({
             <p className="text-xs text-gray-600">
               Entrez le code reçu par SMS
             </p>
-            
+
             <div className="space-y-2">
               <Input
                 id="smsCode"
@@ -175,7 +194,7 @@ const SmsValidationModal: React.FC<SmsValidationModalProps> = ({
                 className="text-center text-lg font-mono tracking-widest"
                 maxLength={6}
               />
-              
+
               {/* Timer */}
               <div className="flex items-center justify-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-orange-500" />
@@ -227,7 +246,7 @@ const SmsValidationModal: React.FC<SmsValidationModalProps> = ({
 
           {/* Note légale */}
           <div className="text-xs text-gray-500 text-center p-3 bg-gray-50 rounded-lg">
-            En validant, vous autorisez {organizationName} à déposer votre véhicule. 
+            En validant, vous autorisez {organizationName} à déposer votre véhicule.
             Vous pouvez annuler cette autorisation à tout moment.
           </div>
         </div>

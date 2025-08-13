@@ -100,7 +100,7 @@ const Profil: React.FC = () => {
 
       try {
         setLoading(true);
-        
+
         // Récupérer le profil depuis la table users
         const { data: profileData, error } = await supabase
           .from('users')
@@ -110,11 +110,11 @@ const Profil: React.FC = () => {
 
         if (error) {
           console.error('Erreur lors de la récupération du profil:', error);
-          
+
           // Si l'utilisateur n'existe pas dans la table users, créer un profil par défaut
           if (error.code === 'PGRST116') {
             console.log('Utilisateur non trouvé dans la table users, création d\'un profil par défaut');
-            
+
             // Créer un profil par défaut basé sur les métadonnées auth
             const defaultProfile: UserProfile = {
               id: authUser.id,
@@ -131,7 +131,7 @@ const Profil: React.FC = () => {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             };
-            
+
             setUserProfile(defaultProfile);
             setFormData({
               full_name: authUser.user_metadata?.full_name || authUser.email || '',
@@ -142,7 +142,7 @@ const Profil: React.FC = () => {
               date_prise_fonction: '',
               organization_name: ''
             });
-            
+
             // L'avatar sera récupéré depuis les métadonnées utilisateur
             if (authUser?.user_metadata?.avatar_url) {
               setAvatarPreview(authUser.user_metadata.avatar_url);
@@ -156,7 +156,7 @@ const Profil: React.FC = () => {
 
         if (profileData) {
           setUserProfile(profileData);
-      setFormData({
+          setFormData({
             full_name: `${profileData.nom || ''} ${profileData.prenom || ''}`.trim(),
             email: profileData.email || authUser.email || '',
             phone: profileData.telephone || '',
@@ -165,7 +165,7 @@ const Profil: React.FC = () => {
             date_prise_fonction: profileData.date_prise_fonction || '',
             organization_name: profileData.fonction || ''
           });
-          
+
           // L'avatar sera récupéré depuis les métadonnées utilisateur
           if (authUser?.user_metadata?.avatar_url) {
             setAvatarPreview(authUser.user_metadata.avatar_url);
@@ -203,7 +203,7 @@ const Profil: React.FC = () => {
         toast.error('L\'image est trop volumineuse (max 2Mo)');
         return;
       }
-      
+
       setAvatarFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -225,8 +225,8 @@ const Profil: React.FC = () => {
       // Upload de l'avatar si un nouveau fichier est sélectionné
       if (avatarFile) {
         const uploadResult = await FileService.uploadUserAvatar(
-          avatarFile, 
-          authUser.id, 
+          avatarFile,
+          authUser.id,
           (progress) => {
             console.log('Upload progress:', progress);
             // Optionnel : afficher la progression à l'utilisateur
@@ -243,11 +243,11 @@ const Profil: React.FC = () => {
 
       // Mise à jour du profil dans Supabase - seulement les champs existants
       const updateData: Record<string, any> = {};
-      
+
       // Extraire nom et prénom du full_name
       const [nom, ...prenomParts] = formData.full_name.split(' ');
       const prenom = prenomParts.join(' ');
-      
+
       if (formData.full_name.trim() !== `${userProfile?.nom || ''} ${userProfile?.prenom || ''}`.trim()) {
         updateData.full_name = formData.full_name;
       }
@@ -268,7 +268,7 @@ const Profil: React.FC = () => {
       const { error } = await supabase
         .from('users')
         .update(updateData)
-        .eq('auth_user_id', authUser.id);
+        .eq('id', authUser.id);
 
       if (error) {
         console.error('Erreur lors de la mise à jour:', error);
@@ -309,18 +309,18 @@ const Profil: React.FC = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setAvatarFile(null);
-    
+
     // Restaurer les données originales
     if (userProfile) {
       setFormData({
-          full_name: `${userProfile.nom || ''} ${userProfile.prenom || ''}`.trim(),
-          email: userProfile.email || authUser?.email || '',
-          phone: userProfile.telephone || '',
-          role: userProfile.role || '',
-          speciality: userProfile.specialite || '',
-                      date_prise_fonction: userProfile.date_prise_fonction || '',
-          organization_name: userProfile.fonction || ''
-        });
+        full_name: `${userProfile.nom || ''} ${userProfile.prenom || ''}`.trim(),
+        email: userProfile.email || authUser?.email || '',
+        phone: userProfile.telephone || '',
+        role: userProfile.role || '',
+        speciality: userProfile.specialite || '',
+        date_prise_fonction: userProfile.date_prise_fonction || '',
+        organization_name: userProfile.fonction || ''
+      });
       setAvatarPreview(authUser?.user_metadata?.avatar_url || null);
     }
   };
@@ -380,8 +380,8 @@ const Profil: React.FC = () => {
           {/* Carte de profil principale */}
           <div className="lg:col-span-1">
             <Card className="shadow-soft animate-fade-in">
-                      <CardHeader className="text-center pb-4">
-          <div className="relative mx-auto mb-2">
+              <CardHeader className="text-center pb-4">
+                <div className="relative mx-auto mb-2">
                   {avatarPreview ? (
                     <img
                       src={avatarPreview}
@@ -594,9 +594,9 @@ const Profil: React.FC = () => {
                     <Label className="text-sm font-medium">Date de prise de fonction</Label>
                     {isEditing ? (
                       <Input
-                                        name="date_prise_fonction"
-                type="date"
-                value={formData.date_prise_fonction}
+                        name="date_prise_fonction"
+                        type="date"
+                        value={formData.date_prise_fonction}
                         onChange={handleInputChange}
                         className="h-10"
                       />

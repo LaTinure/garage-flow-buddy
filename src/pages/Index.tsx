@@ -91,14 +91,13 @@ const Index = () => {
       </header>
 
       {/* Hero Section avec Carrousel */}
-      <section className="relative h-[600px] overflow-hidden">
+      <section className="relative h-[700px] -mt-4 overflow-hidden">
         <div className="absolute inset-0">
           {carouselItems.map((item, index) => (
             <div
               key={item.id}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentSlide ? 'opacity-100' : 'opacity-0'
-              }`}
+              className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'
+                }`}
             >
               <div className="absolute inset-0">
                 <img
@@ -165,9 +164,8 @@ const Index = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentSlide ? 'bg-white scale-125' : 'bg-white/50'
-                }`}
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentSlide ? 'bg-white scale-125' : 'bg-white/50'
+                  }`}
               />
             ))}
           </div>
@@ -207,13 +205,11 @@ const Index = () => {
                 features: ["Réparation", "Peinture", "Polissage", "Protection"]
               }
             ].map((service, index) => (
-              <Card key={index} className={`group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${
-                isDark ? 'bg-gray-700 border-gray-600' : ''
-              }`}>
+              <Card key={index} className={`group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${isDark ? 'bg-gray-700 border-gray-600' : ''
+                }`}>
                 <CardHeader className="text-center">
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                    isDark ? 'bg-gradient-to-br from-orange-500 to-red-600' : 'bg-gradient-to-br from-blue-500 to-purple-600'
-                  }`}>
+                  <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${isDark ? 'bg-gradient-to-br from-orange-500 to-red-600' : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                    }`}>
                     <service.icon className="w-8 h-8 text-white" />
                   </div>
                   <CardTitle className={isDark ? 'text-white' : ''}>{service.title}</CardTitle>
@@ -286,11 +282,10 @@ const Index = () => {
               </div>
             </div>
             <div className="text-center">
-              <Card className={`p-8 border-orange-200 ${
-                isDark
+              <Card className={`p-8 border-orange-200 ${isDark
                   ? 'bg-gray-700 border-gray-600'
                   : 'bg-gradient-to-br from-orange-50 to-red-50'
-              }`}>
+                }`}>
                 <CardHeader>
                   <CardTitle className={`text-2xl ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     Accès Espace Pro

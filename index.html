@@ -1,29 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Garage Abidjan - Gestion de Garage</title>
-    <meta name="description" content="Application de gestion de garage moderne et complète" />
-    <meta name="author" content="Garage Abidjan" />
+<html lang="fr">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/Logo01.png" />
-    <link rel="apple-touch-icon" href="/Logo01.png" />
-    <link rel="shortcut icon" href="/Logo01.png" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1a1a" />
 
-    <meta property="og:title" content="Garage Abidjan - Gestion de Garage" />
-    <meta property="og:description" content="Application de gestion de garage moderne et complète" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/Logo01.png" />
+  <title>Gestion Multi-instances - Administration</title>
+  <meta name="description" content="Application de gestion de garage moderne et complète" />
+  <meta name="author" content="Garage Flow Buddy" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@garage_abidjan" />
-    <meta name="twitter:image" content="/Logo01.png" />
-  </head>
+  <!-- PWA Support -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/Logo01.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/Logo01-small.png" />
+  <link rel="apple-touch-icon" href="/Logo01.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Garage Flow Buddy - Administration" />
+  <meta property="og:description" content="Application de gestion de garage moderne et complète" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/Logo01.png" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@garageflowbuddy" />
+  <meta name="twitter:image" content="/Logo01.png" />
+
+  <!-- Ajout des URLs de base -->
+  <base href="/" />
+  <meta name="base-url" content="<%= process.env.BASE_URL || '/' %>" />
+
+  <!-- Préchargement optimisé -->
+  <link rel="preload" href="/Logo01.png" as="image" />
+  <link rel="preload" href="/Logo01-small.png" as="image" />
+
+  <!-- Préchargement des ressources critiques -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://metssugfqsnttghfrsxx.supabase.co" />
+</head>
+
+<body>
+  <div id="root"></div>
+  <noscript>
+    <p>JavaScript est nécessaire pour faire fonctionner cette application.</p>
+  </noscript>
+
+  <script type="module" src="/src/main.tsx"></script>
+
+  <!-- Service Worker avec meilleure gestion des erreurs -->
+  <script>
+    // Désactiver le SW en développement
+    if ('serviceWorker' in navigator &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1' &&
+      import.meta.env.PROD) {
+
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/service-worker.js');
+          console.log('SW enregistré:', registration.scope);
+
+          // Gérer les mises à jour
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  console.log('Nouvelle version disponible');
+                }
+              }
+            });
+          });
+        } catch (error) {
+          console.warn('Erreur SW:', error);
+        }
+      });
+
+      // Gérer les erreurs de fetch
+      window.addEventListener('unhandledrejection', event => {
+        if (event.reason?.message?.includes('Failed to fetch')) {
+          console.warn('Erreur réseau:', event.reason);
+        }
+      });
+    } else {
+      console.log('SW désactivé en développement');
+    }
+  </script>
+</body>
+
 </html>

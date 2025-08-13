@@ -24,6 +24,7 @@ type WizardStep =
   | 'pricing'
   | 'create-admin'
   | 'create-organization'
+  | 'sms-validation'
   | 'garage-setup'
   | 'complete';
 
@@ -64,14 +65,16 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
   // Gestion du Super-Admin
   const handleSuperAdminCreated = () => {
     console.log('✅ Super-Admin créé, passage à la création de l\'admin d\'organisation');
-    setCurrentStep('create-admin');
+    // Après super-admin, afficher le plan tarifaire
+    setCurrentStep('pricing');
   };
 
   // Gestion du Pricing (optionnel - peut être sauté) 
   const handlePlanSelection = (planId: string) => {
     console.log('✅ Plan sélectionné:', planId);
     setOrganizationData(prev => ({ ...prev, selectedPlan: planId }));
-    setCurrentStep('create-organization');
+    // Après le choix du plan, passer à la création de l'admin
+    setCurrentStep('create-admin');
   };
 
   // Gestion de la création de l'admin
@@ -197,8 +200,8 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
 
       toast.success('Organisation créée avec succès!');
 
-      // Passer au setup garage
-      setCurrentStep('garage-setup');
+      // Afficher la validation SMS/paiement après création d'organisation
+      setCurrentStep('sms-validation');
     } catch (error: any) {
       toast.error('Erreur lors de la création de l\'organisation: ' + (error.message || 'Erreur inconnue'));
     } finally {
@@ -229,6 +232,16 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
     }, 2000);
   };
 
+  // Gestion de la validation SMS après création d'organisation
+  const handleSmsValidate = async () => {
+    // En validation réussie (code 123456 dans le modal), continuer le flux
+    setCurrentStep('garage-setup');
+  };
+
+  const handleSmsRefuse = () => {
+    // Si refus, on peut tout de même continuer ou revenir en arrière. On continue pour ne pas bloquer.
+    setCurrentStep('garage-setup');
+  };
 
 
   // Rendu selon l'étape
@@ -441,6 +454,19 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
       );
 
 
+
+    case 'sms-validation':
+      return (
+        <SmsValidationModal
+          isOpen={isOpen}
+          onClose={() => { }}
+          onValidate={handleSmsValidate}
+          onRefuse={handleSmsRefuse}
+          organizationCode={organizationData.code}
+          organizationName={organizationData.name}
+          adminName={adminData.name}
+        />
+      );
 
     case 'garage-setup':
       return (
