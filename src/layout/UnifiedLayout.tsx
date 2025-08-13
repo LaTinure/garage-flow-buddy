@@ -11,10 +11,12 @@ interface UnifiedLayoutProps {
 const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-all duration-300">
-      {/* Header avec effet de transparence */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
+      {/* Header fixe en haut */}
+      <header className="fixed top-0 left-0 right-0 z-50">
         <UnifiedHeader showUserMenu={true} showThemeToggle={true} />
       </header>
+      {/* Spacer pour compenser la hauteur du header et éviter l'écrasement */}
+      <div style={{ height: 72 }} />
       
       {/* Navigation avec animations */}
       <div className="bg-card/50 border-b border-border/30">
