@@ -8,6 +8,8 @@ import StockModal from '@/components/StockModal';
 import StockDetailModal from '@/components/StockDetailModal';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import StockImages from '@/assets/images/stock.webp';
+
 
 interface StockItem {
   id: number;
@@ -213,10 +215,10 @@ const Stock: React.FC = () => {
   // Filtrage des éléments
   const filteredItems = stockItems.filter(item => {
     const matchesSearch = item.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.codeProduit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.fournisseur.toLowerCase().includes(searchTerm.toLowerCase());
+      item.codeProduit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.fournisseur.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesCategory = filterCategory === 'all' || item.categorie === filterCategory;
+    const matchesCategory = filterCategory === 'all' || item.categorie === filterCategory;
 
     const matchesStatus = filterStatus === 'all' ||
       (filterStatus === 'alert' && item.quantite <= item.seuilAlerte) ||
@@ -247,11 +249,16 @@ const Stock: React.FC = () => {
     <div>
       <div className="py-4 w-full">
         {/* Image de fond */}
-        <img
-          src="https://images.unsplash.com/photo-1563720223185-11003d516935?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
-          alt="Stock garage"
-          className="w-full h-40 object-cover rounded-xl mb-6 shadow-soft animate-fade-in"
-        />
+        <picture>
+          <source srcSet={StockImages} type="image/webp" />
+          <img
+            className="w-full h-40 object-cover rounded-xl mb-6 shadow-soft animate-fade-in"
+            src={StockImages}
+            alt="Parc automobile disponible"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
 
         {/* En-tête avec bouton d'ajout */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -355,9 +362,8 @@ const Stock: React.FC = () => {
           {filteredItems.map((item) => (
             <Card
               key={item.id}
-              className={`shadow-soft animate-fade-in cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                item.quantite <= item.seuilAlerte ? 'border-orange-200 bg-orange-50/50' : ''
-              }`}
+              className={`shadow-soft animate-fade-in cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${item.quantite <= item.seuilAlerte ? 'border-orange-200 bg-orange-50/50' : ''
+                }`}
               onClick={() => openDetailModal(item)}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -443,7 +449,7 @@ const Stock: React.FC = () => {
           <div className="text-center py-12">
             <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun élément trouvé</h3>
-                        <p className="text-gray-500 mb-4">
+            <p className="text-gray-500 mb-4">
               {searchTerm || filterCategory !== 'all' || filterStatus !== 'all'
                 ? 'Aucun élément ne correspond à vos critères de recherche.'
                 : 'Aucun élément de stock enregistré.'

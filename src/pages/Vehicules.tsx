@@ -9,6 +9,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import VehicleForm, { VehicleData } from '@/components/VehicleForm';
 import VehicleDetailModal from '@/components/VehicleDetailModal';
 import { Vehicle, VEHICLE_CARBURANTS, VEHICLE_ETATS, VEHICLE_MARQUES } from '@/types/vehicles';
+import vehiculesImage from '@/assets/images/vehicule.webp';
+
 
 const Vehicules: React.FC = () => {
   const { isDark } = useTheme();
@@ -243,9 +245,9 @@ const Vehicules: React.FC = () => {
   // Filtrage des véhicules
   const filteredVehicles = vehicles.filter(vehicle => {
     const matchesSearch = vehicle.marque.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.modele.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.immatriculation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.proprietaire.toLowerCase().includes(searchTerm.toLowerCase());
+      vehicle.modele.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.immatriculation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.proprietaire.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesMarque = filterMarque === 'all' || vehicle.marque === filterMarque;
     const matchesCarburant = filterCarburant === 'all' || vehicle.carburant === filterCarburant;
@@ -302,11 +304,16 @@ const Vehicules: React.FC = () => {
   return (
     <div>
       <div className="py-4 w-full">
-        <img
-          src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
-          alt="Véhicules garage"
-          className="w-full h-40 object-cover rounded-xl mb-6 shadow-soft animate-fade-in"
-        />
+        <picture>
+          <source srcSet={vehiculesImage} type="image/webp" />
+          <img
+            className="w-full h-40 object-cover rounded-xl mb-6 shadow-soft animate-fade-in"
+            src={vehiculesImage}
+            alt="Parc automobile disponible"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
 
         {/* En-tête avec bouton d'ajout */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">

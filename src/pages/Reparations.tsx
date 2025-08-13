@@ -11,6 +11,8 @@ import { needsPhotoEvidence } from '@/utils/photoEvidence';
 import ReparationModal from '@/components/ReparationModal';
 import ReparationDetailModal from '@/components/ReparationDetailModal';
 import { Reparation, REPARATION_STATUTS, VEHICULES_EXEMPLES, CLIENTS_EXEMPLES } from '@/types/reparations';
+import ReparationImages from '@/assets/images/reparation.webp';
+
 
 const Reparations: React.FC = () => {
   const { isDark } = useTheme();
@@ -193,8 +195,8 @@ const Reparations: React.FC = () => {
   // Filtrage des réparations
   const filteredReparations = reparations.filter(rep => {
     const matchesSearch = rep.vehicule.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         rep.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         rep.description.toLowerCase().includes(searchTerm.toLowerCase());
+      rep.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rep.description.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatut = filterStatut === 'all' || rep.statut === filterStatut;
     const matchesVehicule = filterVehicule === 'all' || rep.vehicule === filterVehicule;
@@ -259,11 +261,16 @@ const Reparations: React.FC = () => {
   return (
     <div>
       <div className="py-4 w-full">
-        <img
-          src="https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=900&q=80"
-          alt="Réparations garage"
-          className="w-full h-40 object-cover rounded-xl mb-6 shadow-soft animate-fade-in"
-        />
+        <picture>
+          <source srcSet={ReparationImages} type="image/webp" />
+          <img
+            className="w-full h-40 object-cover rounded-xl mb-6 shadow-soft animate-fade-in"
+            src={ReparationImages}
+            alt="Parc automobile disponible"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
 
         {/* En-tête avec bouton d'ajout */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -423,34 +430,34 @@ const Reparations: React.FC = () => {
                   vehicleValue: 6000000,
                   client: { isBlacklisted: false }
                 }) && (
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <div className="flex items-center gap-2">
-                      {hasPhotoEvidence(r.id.toString()) ? (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <Camera className="w-4 h-4" />
-                          <span className="text-xs">Photos capturées</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-yellow-600">
-                          <AlertTriangle className="w-4 h-4" />
-                          <span className="text-xs">Photos requises</span>
-                        </div>
-                      )}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        {hasPhotoEvidence(r.id.toString()) ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <Camera className="w-4 h-4" />
+                            <span className="text-xs">Photos capturées</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-yellow-600">
+                            <AlertTriangle className="w-4 h-4" />
+                            <span className="text-xs">Photos requises</span>
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedReparation(r);
+                        }}
+                        className="text-xs"
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        Voir
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedReparation(r);
-                      }}
-                      className="text-xs"
-                    >
-                      <Eye className="w-3 h-3 mr-1" />
-                      Voir
-                    </Button>
-                  </div>
-                )}
+                  )}
 
                 {/* Actions */}
                 <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">

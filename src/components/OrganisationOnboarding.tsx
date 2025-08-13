@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import PricingModal from '@/components/PricingModal';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const OrganisationOnboarding: React.FC<Props> = ({
   plan,
   showPricingFirst = false
 }) => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(showPricingFirst ? 'pricing' : 'organisation');
   const [selectedPlan, setSelectedPlan] = useState(plan || 'free');
   const [isLoading, setIsLoading] = useState(false);
@@ -135,6 +137,7 @@ export const OrganisationOnboarding: React.FC<Props> = ({
       });
 
       onComplete(orgData.id);
+      navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Erreur complète:', error);
       toast({

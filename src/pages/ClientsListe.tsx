@@ -9,6 +9,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import ClientForm from '@/components/ClientForm';
 import ClientDetailModal from '@/components/ClientDetailModal';
 import { Client, CLIENT_STATUTS } from '@/types/clients';
+import ClientImages from '@/assets/images/clients.webp';
+
 
 const ClientsListe: React.FC = () => {
   const { isDark } = useTheme();
@@ -173,8 +175,8 @@ const ClientsListe: React.FC = () => {
         derniereVisite: new Date().toISOString().split('T')[0],
         totalDepense: 0,
         statut: formData.statut === 'nouveau' ? 'Nouveau' :
-                formData.statut === 'actif' ? 'Actif' :
-                formData.statut === 'vip' ? 'VIP' : 'Inactif',
+          formData.statut === 'actif' ? 'Actif' :
+            formData.statut === 'vip' ? 'VIP' : 'Inactif',
         dateNaissance: formData.dateNaissance || undefined,
         numeroPermis: formData.numeroPermis || undefined,
         notes: formData.notes || undefined,
@@ -202,8 +204,8 @@ const ClientsListe: React.FC = () => {
         email: formData.email,
         adresse: formData.adresse,
         statut: formData.statut === 'nouveau' ? 'Nouveau' :
-                formData.statut === 'actif' ? 'Actif' :
-                formData.statut === 'vip' ? 'VIP' : 'Inactif',
+          formData.statut === 'actif' ? 'Actif' :
+            formData.statut === 'vip' ? 'VIP' : 'Inactif',
         dateNaissance: formData.dateNaissance || undefined,
         numeroPermis: formData.numeroPermis || undefined,
         notes: formData.notes || undefined,
@@ -247,8 +249,8 @@ const ClientsListe: React.FC = () => {
       dateNaissance: client.dateNaissance || '',
       numeroPermis: client.numeroPermis || '',
       statut: client.statut === 'Nouveau' ? 'nouveau' :
-              client.statut === 'Actif' ? 'actif' :
-              client.statut === 'VIP' ? 'vip' : 'inactif',
+        client.statut === 'Actif' ? 'actif' :
+          client.statut === 'VIP' ? 'vip' : 'inactif',
       notes: client.notes || ''
     };
 
@@ -274,15 +276,15 @@ const ClientsListe: React.FC = () => {
   // Filtrage des clients
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.phone.includes(searchTerm) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.adresse.toLowerCase().includes(searchTerm.toLowerCase());
+      client.phone.includes(searchTerm) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.adresse.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatut = filterStatut === 'all' ||
-                         (filterStatut === 'nouveau' && client.statut === 'Nouveau') ||
-                         (filterStatut === 'actif' && client.statut === 'Actif') ||
-                         (filterStatut === 'vip' && client.statut === 'VIP') ||
-                         (filterStatut === 'inactif' && client.statut === 'Inactif');
+      (filterStatut === 'nouveau' && client.statut === 'Nouveau') ||
+      (filterStatut === 'actif' && client.statut === 'Actif') ||
+      (filterStatut === 'vip' && client.statut === 'VIP') ||
+      (filterStatut === 'inactif' && client.statut === 'Inactif');
 
     return matchesSearch && matchesStatut;
   });
@@ -326,11 +328,16 @@ const ClientsListe: React.FC = () => {
   return (
     <div>
       <div className="py-4 w-full">
-        <img
-          src="https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=900&q=80"
-          alt="Clients garage"
-          className="w-full h-40 object-cover rounded-xl mb-6 shadow-soft animate-fade-in"
-        />
+        <picture>
+          <source srcSet={ClientImages} type="image/webp" />
+          <img
+            className="w-full h-40 object-cover rounded-xl mb-6 shadow-soft animate-fade-in"
+            src={ClientImages}
+            alt="Parc automobile disponible"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
 
         {/* En-tête avec bouton d'ajout */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -565,8 +572,8 @@ const ClientsListe: React.FC = () => {
           dateNaissance: selectedClient.dateNaissance || '',
           numeroPermis: selectedClient.numeroPermis || '',
           statut: selectedClient.statut === 'Nouveau' ? 'nouveau' :
-                  selectedClient.statut === 'Actif' ? 'actif' :
-                  selectedClient.statut === 'VIP' ? 'vip' : 'inactif',
+            selectedClient.statut === 'Actif' ? 'actif' :
+              selectedClient.statut === 'VIP' ? 'vip' : 'inactif',
           notes: selectedClient.notes || ''
         } : undefined}
       />

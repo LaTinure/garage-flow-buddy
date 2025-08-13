@@ -20,7 +20,7 @@ import APropos from '@/pages/APropos';
 import NotFound from '@/pages/NotFound';
 
 // Composants
-import WorkflowGuard from '@/components/WorkflowGuard';
+import { WorkflowGuard } from '@/components/WorkflowGuard';
 import SimpleAuthGuard from '@/components/SimpleAuthGuard';
 import PostAuthHandler from '@/components/PostAuthHandler';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -64,57 +64,57 @@ const App: React.FC = () => {
               />
 
               {/* Page d'authentification */}
-              <Route 
-                path="/auth" 
+              <Route
+                path="/auth"
                 element={
                   <PageTransition>
                     <Auth />
                   </PageTransition>
-                } 
+                }
               />
 
               {/* Routes protégées avec layout unifié */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              
+
               {/* Gestion des clients */}
               <Route path="/clients" element={<ProtectedRoute><ClientsListe /></ProtectedRoute>} />
               <Route path="/clients/liste" element={<ProtectedRoute><ClientsListe /></ProtectedRoute>} />
               <Route path="/clients/ajouter" element={<ProtectedRoute><ClientsAjouter /></ProtectedRoute>} />
               <Route path="/clients/historique" element={<ProtectedRoute><ClientsHistorique /></ProtectedRoute>} />
-              
+
               {/* Gestion des véhicules */}
               <Route path="/vehicules" element={<ProtectedRoute><Vehicules /></ProtectedRoute>} />
-              
+
               {/* Gestion des réparations */}
               <Route path="/reparations" element={<ProtectedRoute><Reparations /></ProtectedRoute>} />
-              
+
               {/* Gestion du stock */}
               <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
-              
+
               {/* Gestion du personnel */}
               <Route path="/personnel" element={<ProtectedRoute><Personnel /></ProtectedRoute>} />
-              
+
               {/* Profil utilisateur */}
               <Route path="/profil" element={<ProtectedRoute><Profil /></ProtectedRoute>} />
-              
+
               {/* Paramètres */}
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              
+
               {/* Pages d'aide et information */}
               <Route path="/aide" element={<ProtectedRoute><Aide /></ProtectedRoute>} />
               <Route path="/a-propos" element={<ProtectedRoute><APropos /></ProtectedRoute>} />
-              
+
               {/* Debug */}
               <Route path="/debug" element={<ProtectedRoute><UserMenuDebug /></ProtectedRoute>} />
 
               {/* Route 404 */}
-              <Route 
-                path="*" 
+              <Route
+                path="*"
                 element={
                   <PageTransition>
                     <NotFound />
                   </PageTransition>
-                } 
+                }
               />
             </Routes>
 
