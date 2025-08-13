@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { FileService } from '@/integrations/supabase/fileService';
 
 interface AdminCRUDModalProps {
   isOpen: boolean;
@@ -46,6 +47,7 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   // Génération automatique du slug à chaque changement du nom
   useEffect(() => {
@@ -143,6 +145,10 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setAvatarFile(file);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,6 +216,14 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
       }
 
       if (authData.user) {
+        let uploadedAvatarUrl: string | undefined;
+        // Upload avatar si fourni
+        if (avatarFile) {
+          const uploadResult = await FileService.uploadUserAvatar(avatarFile, authData.user.id);
+          if (uploadResult.success && uploadResult.url) {
+            uploadedAvatarUrl = uploadResult.url;
+          }
+        }
         // Créer l'entrée dans la table users
         const { error: userError } = await supabase
           .from('users')
@@ -221,7 +235,8 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
             phone: formData.phone,
             role: 'admin',
             organisation_id: organisationData.id,
-            est_actif: true
+            est_actif: true,
+            avatar_url: uploadedAvatarUrl
           });
 
         if (userError) {
@@ -288,6 +303,10 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="avatar">Avatar</Label>
+                <Input id="avatar" type="file" accept="image/*" onChange={handleAvatarUpload} />
+              </div>
               {/* Nom et Prénom */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

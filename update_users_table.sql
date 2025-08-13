@@ -17,7 +17,11 @@ ADD COLUMN organisation_id UUID REFERENCES organisations(id);
 ALTER TABLE users 
 ADD COLUMN is_active BOOLEAN DEFAULT true;
 
--- 5. Vérifier la nouvelle structure
+-- 5. Ajouter la colonne avatar_url
+ALTER TABLE users 
+ADD COLUMN avatar_url TEXT DEFAULT 'default_avatar.jpg';
+
+-- 6. Vérifier la nouvelle structure
 SELECT 
     column_name,
     data_type,

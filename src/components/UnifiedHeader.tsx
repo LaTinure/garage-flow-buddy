@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import NotificationCenter from './NotificationCenter';
+import AnimatedLogo from './AnimatedLogo';
 import UserMenu from './UserMenu';
 import styles from './UnifiedHeader.module.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -197,8 +198,13 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
   const headerClass = useMemo(() => `${styles.header} ${isDark ? styles.dark : styles.light}`, [isDark]);
 
   return (
-    <motion.header className={headerClass} initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={spring}>
-      <div className={styles.inner}>
+    <motion.header
+      className={`${headerClass} w-screen px-0 mx-0 bg-gradient-to-r from-[#128C7E] to-[#075E54]`}
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={spring}
+    >
+      <div className={`${styles.inner} max-w-[100vw]`}>
         {/* Left: Back + Brand */}
         <div className={styles.leftSection}>
           <button
@@ -208,16 +214,18 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
               withRipple(e);
               handleBack();
             }}
-            className={styles.iconButton}
+            className={`${styles.iconButton} text-white/90 hover:text-white`}
           >
             <ICONS.back />
           </button>
 
           <div className={styles.brand} aria-label={garageName} role="heading" aria-level={1}>
-            <motion.div className={styles.brandMark} whileHover={{ scale: 1.05 }} transition={spring} />
+            <motion.div className={styles.brandMark} whileHover={{ scale: 1.05 }} transition={spring} style={{ width: 60, height: 60, borderRadius: 16, background: 'transparent', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <AnimatedLogo />
+            </motion.div>
             <div className={styles.brandText}>
-              <span className={styles.brandTitle}>{garageName}</span>
-              <span className={styles.brandSubtitle}>Excellence Automobile</span>
+              <span className={`${styles.brandTitle} text-white`}>{garageName}</span>
+              <span className={`${styles.brandSubtitle} text-white/80`}>Excellence Automobile</span>
             </div>
           </div>
         </div>
@@ -234,7 +242,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                         to={item.path}
                         role="menuitem"
                         aria-current={isActive(item.path) ? 'page' : undefined}
-                        className={`${styles.navItem} ${isActive(item.path) ? styles.active : ''}`}
+                        className={`${styles.navItem} text-white/90 hover:text-white ${isActive(item.path) ? styles.active : ''}`}
                         onClick={withRipple}
                       >
                         {IconFor(item.icon)}
@@ -245,7 +253,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                   ) : (
                     <div className={styles.navDropdown}>
                       <button
-                        className={styles.navItem}
+                        className={`${styles.navItem} text-white/90 hover:text-white`}
                         aria-haspopup="true"
                         aria-expanded={isClientsOpen}
                         onClick={() => setIsClientsOpen((v) => !v)}
@@ -268,7 +276,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                                 <Link
                                   to={child.path}
                                   role="menuitem"
-                                  className={`${styles.dropdownItem} ${isActive(child.path) ? styles.activeDropdown : ''}`}
+                                  className={`${styles.dropdownItem} text-white/90 hover:text-white ${isActive(child.path) ? styles.activeDropdown : ''}`}
                                   onClick={withRipple}
                                 >
                                   {child.name}
@@ -295,7 +303,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
               type="button"
               aria-label="Notifications"
               onClick={() => setIsNotificationOpen(true)}
-              className={styles.iconButton}
+              className={`${styles.iconButton} text-white/90 hover:text-white`}
             >
               <ICONS.bell />
               {!notifLoading && unreadNotifications > 0 && (
@@ -315,7 +323,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                 withRipple(e);
                 toggleTheme();
               }}
-              className={styles.iconButton}
+              className={`${styles.iconButton} text-white/90 hover:text-white`}
             >
               {isDark ? <ICONS.sun /> : <ICONS.moon />}
             </button>
@@ -325,7 +333,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
           {showUserMenu ? (
             <UserMenu />
           ) : (
-            <Button variant="ghost" size="sm" className={styles.skeletonBtn} aria-disabled>
+            <Button variant="ghost" size="sm" className={`${styles.skeletonBtn} text-white/90`} aria-disabled>
               Chargement...
             </Button>
           )}
@@ -362,7 +370,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                     <Link
                       to={item.path}
                       role="menuitem"
-                      className={`${styles.mobileItem} ${isActive(item.path) ? styles.active : ''}`}
+                      className={`${styles.mobileItem} text-white/90 hover:text-white ${isActive(item.path) ? styles.active : ''}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {IconFor(item.icon)}
@@ -380,7 +388,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                             <Link
                               to={child.path}
                               role="menuitem"
-                              className={`${styles.mobileSubItem} ${isActive(child.path) ? styles.active : ''}`}
+                              className={`${styles.mobileSubItem} text-white/90 hover:text-white ${isActive(child.path) ? styles.active : ''}`}
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
                               {child.name}
