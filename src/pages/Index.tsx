@@ -91,7 +91,7 @@ const Index = () => {
       </header>
 
       {/* Hero Section avec Carrousel */}
-      <section className="relative h-[600px] overflow-hidden">
+      <section className="relative h-[700px] -mt-4 overflow-hidden">
         <div className="absolute inset-0">
           {carouselItems.map((item, index) => (
             <div

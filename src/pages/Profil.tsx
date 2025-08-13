@@ -268,7 +268,7 @@ const Profil: React.FC = () => {
       const { error } = await supabase
         .from('users')
         .update(updateData)
-        .eq('auth_user_id', authUser.id);
+        .eq('id', authUser.id);
 
       if (error) {
         console.error('Erreur lors de la mise à jour:', error);

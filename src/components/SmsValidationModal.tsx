@@ -138,9 +138,28 @@ const SmsValidationModal: React.FC<SmsValidationModalProps> = ({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Code Organisation :</span>
-                <Badge variant="outline" className="font-mono text-xs">
-                  {organizationCode}
-                </Badge>
+                <div className="flex items-center">
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {organizationCode}
+                  </Badge>
+                  <span
+                    role="button"
+                    aria-label="Copier le code organisation"
+                    title="Copier"
+                    className="ml-2 cursor-pointer select-none"
+                    style={{ fontSize: 20, lineHeight: '20px' }}
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(organizationCode || '');
+                        toast.success('Code copié dans le presse-papiers');
+                      } catch (e) {
+                        toast.error('Impossible de copier le code');
+                      }
+                    }}
+                  >
+                    📋
+                  </span>
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Administrateur :</span>
