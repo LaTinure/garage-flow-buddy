@@ -201,7 +201,7 @@ export const APP_CONFIG = {
   PROGRESS_UPDATE_INTERVAL: 50, // 50ms pour la barre de progression
 
   // Configuration des logs
-  DEBUG_MODE: process.env.NODE_ENV === 'development',
+  DEBUG_MODE: import.meta.env.DEV === true,
   LOG_PREFIX: '[GaragePro]',
 
   // Configuration des redirections
