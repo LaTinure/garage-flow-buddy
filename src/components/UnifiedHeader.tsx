@@ -92,7 +92,7 @@ const whatsappHeaderStyle = `
   w-screen min-w-full m-0 p-0
   bg-gradient-to-r from-[#128C7E] to-[#075E54]
   shadow-md
-  h-14
+  h-25
 `;
 
 const whatsappButtonStyle = `

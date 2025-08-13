@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 16% 89%;
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
@@ -37,6 +37,9 @@
     --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.2);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --backdrop-blur: blur(12px);
+
+    /* Light body bg custom */
+    --body-bg-light: #e7dede;
   }
 
   .dark {
@@ -73,7 +76,12 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: var(--body-bg-light);
+  }
+
+  .dark body {
+    @apply bg-background;
   }
 }
 
@@ -364,15 +372,19 @@
   border-color: #3b82f6;
 }
 
-
-
-/* Ajoutez dans votre fichier global CSS */
-@keyframes spin-slow {
-  to {
-    transform: rotate(360deg);
+/* === Overrides header/container === */
+@layer components {
+  header {
+    @apply w-full px-0 mx-0;
   }
-}
 
-.animate-spin-slow {
-  animation: spin-slow 6s linear infinite;
+  .container {
+    @apply max-w-none px-4;
+  }
+
+  label,
+  .form-label,
+  .shadcn-label {
+    @apply text-gray-900 dark:text-gray-100;
+  }
 }
