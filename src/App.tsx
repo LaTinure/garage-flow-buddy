@@ -20,7 +20,7 @@ import APropos from '@/pages/APropos';
 import NotFound from '@/pages/NotFound';
 
 // Composants
-import { WorkflowGuard } from '@/components/WorkflowGuard';
+import WorkflowGuard from '@/components/WorkflowGuard';
 import SimpleAuthGuard from '@/components/SimpleAuthGuard';
 import PostAuthHandler from '@/components/PostAuthHandler';
 import ErrorBoundary from '@/components/ErrorBoundary';

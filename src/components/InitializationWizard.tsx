@@ -63,15 +63,15 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
 
   // Gestion du Super-Admin
   const handleSuperAdminCreated = () => {
-    console.log('✅ Super-Admin créé, passage au pricing');
-    setCurrentStep('pricing');
+    console.log('✅ Super-Admin créé, passage à la création de l\'admin d\'organisation');
+    setCurrentStep('create-admin');
   };
 
-  // Gestion du Pricing
+  // Gestion du Pricing (optionnel - peut être sauté) 
   const handlePlanSelection = (planId: string) => {
     console.log('✅ Plan sélectionné:', planId);
     setOrganizationData(prev => ({ ...prev, selectedPlan: planId }));
-    setCurrentStep('create-admin');
+    setCurrentStep('create-organization');
   };
 
   // Gestion de la création de l'admin
@@ -116,7 +116,7 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
       console.log('✅ Connexion automatique réussie');
 
       toast.success('Compte administrateur créé et connecté avec succès!');
-      
+
       // Passer à la création de l'organisation
       setCurrentStep('create-organization');
     } catch (error: any) {
@@ -158,7 +158,7 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
       }));
 
       toast.success('Organisation créée avec succès!');
-      
+
       // Passer au setup garage
       setCurrentStep('garage-setup');
     } catch (error: any) {
@@ -211,7 +211,7 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
         />
       );
 
-        case 'create-admin':
+    case 'create-admin':
       return (
         <Dialog open={isOpen} onOpenChange={() => { }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
