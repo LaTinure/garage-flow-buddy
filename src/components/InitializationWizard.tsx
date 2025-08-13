@@ -115,6 +115,30 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
 
       console.log('✅ Connexion automatique réussie');
 
+      // Créer/mettre à jour l'enregistrement dans public.users pour respecter les RLS
+      const { data: userInfo } = await supabase.auth.getUser();
+      const authUserId = userInfo?.user?.id;
+      if (!authUserId) throw new Error('ID utilisateur introuvable après authentification');
+
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert(
+          {
+            id: authUserId,
+            auth_user_id: authUserId,
+            full_name: adminData.name,
+            phone: adminData.phone,
+            role: 'admin',
+            is_active: true,
+          } as any,
+          { onConflict: 'id' }
+        );
+
+      if (upsertError) {
+        console.error('❌ Erreur upsert public.users:', upsertError);
+        throw upsertError;
+      }
+
       toast.success('Compte administrateur créé et connecté avec succès!');
       
       // Passer à la création de l'organisation
@@ -156,6 +180,19 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
         ...prev,
         code: result.organization.code ?? 'N/A'
       }));
+
+      // Associer l'organisation à l'utilisateur dans public.users
+      const { data: userInfo } = await supabase.auth.getUser();
+      const authUserId = userInfo?.user?.id;
+      if (authUserId) {
+        const { error: linkError } = await supabase
+          .from('users')
+          .update({ organisation_id: result.organization.id } as any)
+          .eq('id', authUserId);
+        if (linkError) {
+          console.warn('⚠️ Impossible de lier l\'organisation à l\'utilisateur:', linkError.message);
+        }
+      }
 
       toast.success('Organisation créée avec succès!');
       
