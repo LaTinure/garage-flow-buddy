@@ -68,10 +68,28 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
       console.log('✅ Organisation trouvée');
 
-      // 3. Vérifier si des utilisateurs admin existent
+      // 3. Vérifier la session utilisateur (AVANT la vérification des admins pour éviter RLS)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('❌ Erreur session:', sessionError);
+        setWorkflowState('needs-auth');
+        return;
+      }
+
+      if (!session) {
+        console.log('⚠️ Aucune session, redirection vers auth');
+        setWorkflowState('needs-auth');
+        return;
+      }
+
+      console.log('✅ Session utilisateur valide');
+
+      // 4. Vérifier si des utilisateurs admin existent (filtré par rôle)
       const { count: adminCount, error: adminError } = await supabase
         .from('users')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .in('role', ['admin', 'proprietaire']);
 
       if (adminError) {
         console.error('❌ Erreur vérification admins:', adminError);
@@ -88,23 +106,6 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
       }
 
       console.log('✅ Admins trouvés');
-
-      // 4. Vérifier la session utilisateur (seulement si tout le reste est OK)
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        console.error('❌ Erreur session:', sessionError);
-        setWorkflowState('needs-auth');
-        return;
-      }
-
-      if (!session) {
-        console.log('⚠️ Aucune session, redirection vers auth');
-        setWorkflowState('needs-auth');
-        return;
-      }
-
-      console.log('✅ Session utilisateur valide');
 
       // 5. Vérifier si l'utilisateur a une organisation sélectionnée
       const storedOrg = localStorage.getItem('current_org');
@@ -233,7 +234,8 @@ async function checkForExistingAdmins() {
   try {
     const { count, error } = await supabase
       .from('users')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .in('role', ['admin', 'proprietaire']);
 
     if (error) {
       return { hasAdmins: false, error };
