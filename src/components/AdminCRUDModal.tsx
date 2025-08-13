@@ -224,20 +224,16 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
             uploadedAvatarUrl = uploadResult.url;
           }
         }
-        // Créer l'entrée dans la table users
-        const { error: userError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: formData.email,
-            nom: formData.nom,
-            prenom: formData.prenom,
-            phone: formData.phone,
-            role: 'admin',
-            organisation_id: organisationData.id,
-            est_actif: true,
-            avatar_url: uploadedAvatarUrl
-          });
+        // Créer/mettre à jour via RPC (contourne RLS)
+        const { error: userError } = await supabase.rpc('upsert_user_and_profile', {
+          p_id: authData.user.id,
+          p_email: formData.email,
+          p_full_name: `${formData.prenom} ${formData.nom}`.trim(),
+          p_phone: formData.phone,
+          p_role: 'admin',
+          p_org: organisationData.id,
+          p_avatar: uploadedAvatarUrl || null
+        });
 
         if (userError) {
           throw userError;
