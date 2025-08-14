@@ -123,6 +123,29 @@ const GarageSetupModal = ({ isOpen, onComplete }: GarageSetupModalProps) => {
               {/* Logo upload */}
               <div>
                 <Label>Logo du garage (optionnel)</Label>
+                
+                {/* Preview de l'image */}
+                {formData.logoFile && (
+                  <div className="mt-2 flex justify-center">
+                    <div className="relative w-[150px] h-[150px] rounded-xl overflow-hidden shadow-lg border-2 border-primary/20">
+                      <img
+                        src={URL.createObjectURL(formData.logoFile)}
+                        alt="Aperçu du logo"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, logoFile: null }))}
+                          className="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div
                   className={`mt-2 border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${dragActive ? 'border-primary bg-primary/10' : 'border-muted'
                     }`}
@@ -137,6 +160,13 @@ const GarageSetupModal = ({ isOpen, onComplete }: GarageSetupModalProps) => {
                       <p className="text-sm text-muted-foreground">
                         {formData.logoFile.name}
                       </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('logoInput')?.click()}
+                      >
+                        Changer le fichier
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-2">

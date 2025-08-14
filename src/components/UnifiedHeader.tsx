@@ -234,10 +234,17 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
 
 
           <div className={styles.brand}>
-            <AnimatedLogo />
+            <div className="relative">
+              {/* Bulle goutte d'eau pour le logo */}
+              <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border-2 border-white/30 shadow-lg flex items-center justify-center water-drop">
+                <AnimatedLogo />
+                {/* Effet de refraction */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-60 pointer-events-none"></div>
+              </div>
+            </div>
             <div className={styles.brandText}>
-              <span className="text-white font-bold">{garageName}</span>
-              <span className="text-white/80 text-sm">Excellence Automobile</span>
+              <span className="text-white font-bold text-[2.4rem] leading-tight">{garageName}</span>
+              <span className="text-white/80 text-[1.6rem] leading-tight">Excellence Automobile</span>
             </div>
           </div>
         </div>
@@ -263,21 +270,25 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                       </Link>
                     </motion.div>
                   ) : (
-                    <div className={styles.navDropdown}>
+                     <div 
+                       className={styles.navDropdown}
+                       onMouseEnter={() => setIsClientsOpen(true)}
+                       onMouseLeave={() => setIsClientsOpen(false)}
+                     >
                       <button
-                        className={styles.navItem}
+                        className={`${styles.navItem} transition-all duration-300 ease-in-out`}
                         aria-haspopup="true"
                         aria-expanded={isClientsOpen}
                         onClick={() => setIsClientsOpen((v) => !v)}
                       >
                         {IconFor(item.icon)}
                         <span className={styles.navLabel}>{item.name}</span>
-                        {isClientsOpen ? <ICONS.chevrondown style={{ transform: 'rotate(180deg)' }} className={styles.chevron} /> : <ICONS.chevrondown className={styles.chevron} />}
+                        {isClientsOpen ? <ICONS.chevrondown style={{ transform: 'rotate(180deg)' }} className={`${styles.chevron} transition-transform duration-300`} /> : <ICONS.chevrondown className={`${styles.chevron} transition-transform duration-300`} />}
                       </button>
                       <AnimatePresence>
                         {isClientsOpen && (
                           <motion.ul
-                            className={styles.dropdownMenu}
+                            className={`${styles.dropdownMenu} bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-600`}
                             variants={menuVariants}
                             initial="hidden"
                             animate="visible"
@@ -288,8 +299,11 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                                 <Link
                                   to={child.path}
                                   role="menuitem"
-                                  className={`${styles.dropdownItem} ${isActive(child.path) ? styles.activeDropdown : ''}`}
-                                  onClick={withRipple}
+                                  className={`${styles.dropdownItem} ${isActive(child.path) ? styles.activeDropdown : ''} transition-all duration-300 ease-in-out`}
+                                  onClick={(e) => {
+                                    withRipple(e);
+                                    setIsClientsOpen(false);
+                                  }}
                                 >
                                   {child.name}
                                 </Link>

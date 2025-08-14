@@ -137,16 +137,35 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
 
       // ÉTAPE 6: Validation finale - Utilisateur admin avec organisation
       if (currentUser.role === 'admin' && currentUser.organisation_id) {
-        console.log('[17] ✅ Configuration complète → Dashboard');
+        console.log('[17] ✅ Configuration complète → Redirection dashboard');
         setWorkflowState('ready');
         setLoading(false);
+        // Redirection explicite vers dashboard après délai
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 500);
         return;
       }
 
       // Cas par défaut - problème de configuration
       console.log('[18] ⚠️ Configuration incomplète → Réinitialisation');
+      console.log('[19] 🔍 Détails utilisateur:', { 
+        role: currentUser.role, 
+        orgId: currentUser.organisation_id,
+        hasRole: !!currentUser.role,
+        hasOrg: !!currentUser.organisation_id
+      });
+      
+      // Déterminer l'étape suivante basée sur ce qui manque
+      if (!currentUser.role || !['admin', 'proprietaire'].includes(currentUser.role)) {
+        setInitStep('create-admin');
+      } else if (!currentUser.organisation_id) {
+        setInitStep('create-organization');
+      } else {
+        setInitStep('garage-setup');
+      }
+      
       setWorkflowState('needs-init');
-      setInitStep('garage-setup'); // Dernière étape de configuration
       setLoading(false);
 
     } catch (error) {
@@ -159,11 +178,16 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
   };
 
   const handleInitComplete = () => {
-    console.log('✅ Initialisation terminée');
-    toast.success('Configuration terminée ! Vous pouvez maintenant vous connecter.');
+    console.log('✅ Initialisation terminée - Vérification finale');
+    toast.success('Configuration terminée avec succès !');
+    
+    // Marquer comme prêt et laisser le guard faire une nouvelle vérification
     setWorkflowState('ready');
-    // Rediriger vers auth pour que l'utilisateur se connecte
-    navigate('/auth');
+    
+    // Délai pour permettre au système de traiter les données
+    setTimeout(() => {
+      checkWorkflowState(); // Re-vérifier l'état après completion
+    }, 1000);
   };
 
   const checkAdminStatus = async () => {
