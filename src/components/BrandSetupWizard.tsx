@@ -325,7 +325,7 @@ const BrandSetupWizard: React.FC<BrandSetupWizardProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={() => { }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">
@@ -340,16 +340,14 @@ const BrandSetupWizard: React.FC<BrandSetupWizardProps> = ({
             {steps.map((step) => (
               <div
                 key={step.id}
-                className={`flex flex-col items-center ${
-                  step.id <= currentStep ? 'text-blue-600' : 'text-gray-400'
-                }`}
+                className={`flex flex-col items-center ${step.id <= currentStep ? 'text-blue-600' : 'text-gray-400'
+                  }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                    step.id <= currentStep
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${step.id <= currentStep
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-600'
+                    }`}
                 >
                   {step.id < currentStep ? <CheckCircle className="w-4 h-4" /> : step.id}
                 </div>

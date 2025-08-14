@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+
 import {
   User,
   Mail,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { FileService } from '@/integrations/supabase/fileService';
+import { FileService } from '@/lib/fileService';
 
 interface AdminCRUDModalProps {
   isOpen: boolean;
@@ -145,58 +146,59 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setAvatarFile(file);
+
+
+  // Ajoutez la fonction handleAvatarUpload
+  const handleAvatarUpload = async (userId: string, file: File | null) => {
+    let avatarUrl = '/avatar01.png'; // Valeur par défaut
+
+    if (file) {
+      try {
+        const avatarUrlFromService = await FileService.uploadUserAvatar(file, userId);
+        if (avatarUrlFromService) {
+          avatarUrl = avatarUrlFromService;
+        }
+
+        // If your FileService.uploadUserAvatar returns a path, you can use it here.
+        // Otherwise, this block is not needed as avatarUrlFromService is already the URL.
+      } catch (error) {
+        console.error("Échec de l'upload:", error);
+        toast.error("Échec du téléchargement de l'avatar");
+      }
+    }
+
+    return avatarUrl;
   };
 
+  // Modifiez le handleSubmit existant
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) return;
-
     setIsLoading(true);
 
     try {
-      // Vérification de l'existence de l'organisation
-      const { data: existingOrg, error: orgCheckError } = await supabase
-        .from('organisations')
-        .select('id,nom')
-        .eq('nom', formData.nom)
-        .maybeSingle();
-
-      if (orgCheckError) throw orgCheckError;
-
-      if (existingOrg) {
-        setErrors(prev => ({ ...prev, nom: 'Cette organisation existe déjà' }));
-        document.getElementById('organisation-nom')?.focus();
-        setIsLoading(false);
-        return;
+      console.log('1. Début création admin...');
+      
+      // 1. Création organisation si nécessaire
+      let orgId = organisationData?.id;
+      if (!orgId) {
+        const { data: org, error: orgError } = await supabase
+          .from('organisations')
+          .insert({ 
+            nom: formData.nom,
+            slug: formData.slug,
+            est_actif: true
+          })
+          .select('id')
+          .single();
+        
+        if (orgError) throw orgError;
+        orgId = org.id;
       }
 
-      // Création de l'organisation
-      const { data: org, error: orgCreateError } = await supabase
-        .from('organisations')
-        .insert({
-          nom: formData.nom,
-          slug: formData.slug,
-          // logo_url: formData.logo_url, // si tu as un champ logo
-          // ...autres champs...
-        })
-        .select()
-        .single();
+      console.log('2. Organisation OK, création compte auth...');
 
-      if (orgCreateError) throw orgCreateError;
-
-      // Ajoute dans la table garage
-      await supabase.from('garage').insert({
-        organisation_id: org.id,
-        nom: org.nom,
-        // logo_url: org.logo_url,
-        // ...autres champs pertinents...
-      });
-
-      // Suite du processus de création...
+      // 2. Création compte auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -206,59 +208,71 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
             prenom: formData.prenom,
             phone: formData.phone,
             role: 'admin',
-            organisation_id: organisationData.id
+            organisation_id: orgId
           }
         }
       });
 
-      if (authError) {
-        throw authError;
+      if (authError) throw authError;
+      if (!authData.user?.id) throw new Error('ID utilisateur non généré');
+
+      console.log('3. Compte auth créé, ID:', authData.user.id);
+
+      // 3. Création dans public.users
+      const userData = {
+        id: authData.user.id,
+        email: formData.email,
+        nom: formData.nom,
+        prenom: formData.prenom,
+        telephone: formData.phone,
+        role: 'admin',
+        organisation_id: orgId,
+        est_actif: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: usersError } = await supabase
+        .from('users')
+        .insert(userData);
+
+      if (usersError) {
+        console.error('Erreur création users:', usersError);
+        throw usersError;
       }
 
-      if (authData.user) {
-        let uploadedAvatarUrl: string | undefined;
-        // Upload avatar si fourni
-        if (avatarFile) {
-          const uploadResult = await FileService.uploadUserAvatar(avatarFile, authData.user.id);
-          if (uploadResult.success && uploadResult.url) {
-            uploadedAvatarUrl = uploadResult.url;
-          }
-        }
-        // Créer l'entrée dans la table users
-        const { error: userError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: formData.email,
-            nom: formData.nom,
-            prenom: formData.prenom,
-            phone: formData.phone,
-            role: 'admin',
-            organisation_id: organisationData.id,
-            est_actif: true,
-            avatar_url: uploadedAvatarUrl
-          });
+      console.log('4. User créé, création profile...');
 
-        if (userError) {
-          throw userError;
-        }
+      // 4. Création dans public.profiles
+      const profileData = {
+        id: authData.user.id,
+        user_id: authData.user.id,
+        email: formData.email,
+        nom_complet: `${formData.prenom} ${formData.nom}`,
+        phone: formData.phone,
+        role: 'admin',
+        organisation_id: orgId,
+        est_actif: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
-        toast.success('Administrateur créé avec succès !');
-        onComplete({
-          user: authData.user,
-          profile: {
-            id: authData.user.id,
-            email: formData.email,
-            nom: formData.nom,
-            prenom: formData.prenom,
-            role: 'admin',
-            organisation_id: organisationData.id
-          }
-        });
+      const { error: profilesError } = await supabase
+        .from('profiles')
+        .insert(profileData);
+
+      if (profilesError) {
+        console.error('Erreur création profile:', profilesError);
+        throw profilesError;
       }
-    } catch (error: any) {
-      console.error('Erreur lors de la création de l\'administrateur:', error);
-      toast.error(error.message || 'Erreur lors de la création de l\'administrateur');
+
+      console.log('5. Création terminée avec succès');
+      toast.success('Administrateur créé avec succès');
+      onComplete(authData.user);
+
+    } catch (error) {
+      console.error('Erreur création admin:', error);
+      toast.error('Erreur lors de la création');
     } finally {
       setIsLoading(false);
     }
@@ -305,7 +319,15 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="avatar">Avatar</Label>
-                <Input id="avatar" type="file" accept="image/*" onChange={handleAvatarUpload} />
+                <Input
+                  id="avatar"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    handleAvatarUpload("userId", file); // Remplacez "userId" par la vraie valeur
+                  }}
+                />
               </div>
               {/* Nom et Prénom */}
               <div className="grid grid-cols-2 gap-4">

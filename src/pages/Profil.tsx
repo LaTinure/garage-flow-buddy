@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { useSimpleAuth } from '@/hooks/useSimpleAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { FileService } from '@/integrations/supabase/fileService';
+import { FileService } from '@/lib/fileService';
 
 interface UserProfile {
   id: string;
@@ -219,85 +219,84 @@ const Profil: React.FC = () => {
 
     try {
       setSaving(true);
+      console.log('Début de la sauvegarde...');
 
+      // 1. Upload de l'avatar d'abord
       let avatarUrl = authUser?.user_metadata?.avatar_url;
-
-      // Upload de l'avatar si un nouveau fichier est sélectionné
       if (avatarFile) {
-        const uploadResult = await FileService.uploadUserAvatar(
-          avatarFile,
-          authUser.id,
-          (progress) => {
-            console.log('Upload progress:', progress);
-            // Optionnel : afficher la progression à l'utilisateur
+        try {
+          console.log('Upload de l\'avatar...');
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(`user_${authUser.id}/avatar`, avatarFile, {
+              upsert: true
+            });
+
+          if (uploadError) throw uploadError;
+
+          if (uploadData?.path) {
+            avatarUrl = supabase.storage
+              .from('avatars')
+              .getPublicUrl(uploadData.path).data.publicUrl;
           }
-        );
-        if (uploadResult.success) {
-          avatarUrl = uploadResult.url;
-          toast.success('Avatar mis à jour avec succès');
-        } else {
-          toast.error('Erreur lors de l\'upload de l\'avatar: ' + uploadResult.error);
+        } catch (error) {
+          console.error('Erreur upload avatar:', error);
+          toast.error('Erreur lors de l\'upload de l\'avatar');
           return;
         }
       }
 
-      // Mise à jour du profil dans Supabase - seulement les champs existants
-      const updateData: Record<string, any> = {};
-
-      // Extraire nom et prénom du full_name
-      const [nom, ...prenomParts] = formData.full_name.split(' ');
-      const prenom = prenomParts.join(' ');
-
-      if (formData.full_name.trim() !== `${userProfile?.nom || ''} ${userProfile?.prenom || ''}`.trim()) {
-        updateData.full_name = formData.full_name;
-      }
-      if (formData.phone !== userProfile?.telephone) {
-        updateData.phone = formData.phone;
-      }
-      if (formData.role !== userProfile?.role) {
-        updateData.role = formData.role;
-      }
-
-      // Seulement mettre à jour si on a des changements
-      if (Object.keys(updateData).length === 0) {
-        toast.success('Aucune modification détectée');
-        setIsEditing(false);
-        return;
-      }
-
-      const { error } = await supabase
-        .from('users')
-        .update(updateData)
-        .eq('id', authUser.id);
-
-      if (error) {
-        console.error('Erreur lors de la mise à jour:', error);
-        toast.error('Erreur lors de la sauvegarde');
-        return;
-      }
-
-      // Mise à jour des métadonnées utilisateur
-      await supabase.auth.updateUser({
+      // 2. Mise à jour des métadonnées auth
+      console.log('Mise à jour auth metadata...');
+      const { error: userUpdateError } = await supabase.auth.updateUser({
         data: {
+          avatar_url: avatarUrl,
           full_name: formData.full_name,
-          avatar_url: avatarUrl
+          updated_at: new Date().toISOString()
         }
       });
 
-      // Recharger les données
-      const { data: updatedProfile } = await supabase
+      if (userUpdateError) throw userUpdateError;
+
+      // 3. Mise à jour ou création dans public.users
+      console.log('Mise à jour profil utilisateur...');
+      const userData = {
+        id: authUser.id,
+        email: formData.email,
+        nom: formData.full_name.split(' ')[0],
+        prenom: formData.full_name.split(' ').slice(1).join(' '),
+        telephone: formData.phone,
+        role: formData.role,
+        specialite: formData.speciality,
+        date_prise_fonction: formData.date_prise_fonction,
+        fonction: formData.organization_name,
+        avatar_url: avatarUrl,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert(userData, {
+          onConflict: 'id'
+        });
+
+      if (upsertError) throw upsertError;
+
+      // 4. Recharger les données
+      const { data: updatedProfile, error: fetchError } = await supabase
         .from('users')
         .select('*')
         .eq('id', authUser.id)
         .single();
 
-      if (updatedProfile) {
-        setUserProfile(updatedProfile);
-      }
+      if (fetchError) throw fetchError;
 
+      setUserProfile(updatedProfile);
+      setAvatarPreview(avatarUrl);
       setIsEditing(false);
       setAvatarFile(null);
       toast.success('Profil mis à jour avec succès');
+
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       toast.error('Erreur lors de la sauvegarde');

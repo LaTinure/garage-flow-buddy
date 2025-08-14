@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
@@ -50,7 +50,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <Router>
+        <BrowserRouter>
           <div className="min-h-screen bg-background text-foreground">
             <Routes>
               {/* Route racine - redirection intelligente */}
@@ -134,7 +134,7 @@ const App: React.FC = () => {
               }}
             />
           </div>
-        </Router>
+        </BrowserRouter>
       </ThemeProvider>
     </ErrorBoundary>
   );

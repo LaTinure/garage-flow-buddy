@@ -121,22 +121,17 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
       // Upsert dans public.users pour s'assurer que WorkflowGuard détecte l'admin
       const authUserId = signInData?.user?.id || authData.user?.id;
       if (authUserId) {
-        const { error: upsertError } = await supabase
-          .from('users')
-          .upsert(
-            {
-              id: authUserId,
-              email: adminData.email,
-              full_name: adminData.name,
-              phone: adminData.phone,
-              role: 'admin',
-              is_active: true
-            },
-            { onConflict: 'id' }
-          );
-        if (upsertError) {
-          console.error('❌ Erreur upsert public.users:', upsertError);
-          // On ne bloque pas le flux, mais on informe
+        const { error: rpcError } = await supabase.rpc('upsert_user_and_profile', {
+          p_id: authUserId,
+          p_email: adminData.email,
+          p_full_name: adminData.name,
+          p_phone: adminData.phone,
+          p_role: 'admin',
+          p_org: null,
+          p_avatar: null
+        });
+        if (rpcError) {
+          console.error('❌ Erreur RPC upsert_user_and_profile:', rpcError);
         }
       }
 
@@ -180,10 +175,15 @@ const InitializationWizard: React.FC<InitializationWizardProps> = ({
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user?.id) {
-          const { error: linkError } = await supabase
-            .from('users')
-            .update({ organisation_id: result.organization.id })
-            .eq('id', user.id);
+          const { error: linkError } = await supabase.rpc('upsert_user_and_profile', {
+            p_id: user.id,
+            p_email: adminData.email,
+            p_full_name: adminData.name,
+            p_phone: adminData.phone,
+            p_role: 'admin',
+            p_org: result.organization.id,
+            p_avatar: null
+          });
           if (linkError) {
             console.warn('⚠️ Erreur liaison organisation_id sur users:', linkError);
           }

@@ -117,7 +117,7 @@ const Personnel: React.FC = () => {
   const fetchPersonnel = async () => {
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -319,20 +319,20 @@ const Personnel: React.FC = () => {
   }
 
   // Combiner l'utilisateur connecté avec le personnel pour l'affichage
-  const allPersonnel = currentUser 
+  const allPersonnel = currentUser
     ? [currentUser as PersonnelMember, ...personnel.filter(p => p.id !== currentUser.id)]
     : personnel;
 
   // Filtrage du personnel
   const filteredPersonnel = allPersonnel.filter(member => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.prenom?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesRole = filterRole === 'all' || member.role === filterRole;
-    
+
     return matchesSearch && matchesRole;
   });
 
@@ -350,7 +350,7 @@ const Personnel: React.FC = () => {
               Gérez les membres de votre équipe
             </p>
           </div>
-          
+
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm} className="bg-green-600 hover:bg-green-700">
@@ -364,7 +364,7 @@ const Personnel: React.FC = () => {
                   {editingMember ? 'Modifier' : 'Ajouter'} un membre du personnel
                 </DialogTitle>
               </DialogHeader>
-              
+
               <div className="space-y-4">
                 {/* Upload avatar */}
                 <div className="flex flex-col items-center space-y-4">
@@ -574,7 +574,7 @@ const Personnel: React.FC = () => {
                     filteredPersonnel.map((member) => {
                       const isCurrentUser = member.id === currentUser?.id;
                       const displayName = member.full_name || `${member.nom || ''} ${member.prenom || ''}`.trim() || 'Sans nom';
-                      
+
                       return (
                         <TableRow key={member.id} className={isCurrentUser ? 'bg-blue-50 dark:bg-blue-900/20' : ''}>
                           <TableCell>
