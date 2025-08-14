@@ -23,14 +23,10 @@ export const FileUploadTest: React.FC = () => {
     });
 
     try {
-      const result = await FileService.uploadGarageLogo(file);
+      const result = await FileService.uploadGarageLogo(file, 'test-garage');
       console.log('Upload result:', result);
-
-      if (result.success && result.url) {
-        setLogoUrl(result.url);
-      }
-
-      return result;
+      setLogoUrl(result);
+      return { success: true, url: result };
     } catch (error) {
       console.error('Upload error:', error);
       return {
@@ -56,7 +52,7 @@ export const FileUploadTest: React.FC = () => {
             label="Logo du garage (Test)"
             accept="image/png,image/jpeg,image/jpg,image/svg+xml"
             maxSize={2 * 1024 * 1024}
-            onUpload={handleUpload}
+            onUpload={handleUpload as (file: File) => Promise<{ success: boolean; url?: string; error?: string; }>}
             onRemove={handleRemove}
             currentUrl={logoUrl}
             required

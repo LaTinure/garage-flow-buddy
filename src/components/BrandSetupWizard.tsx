@@ -126,16 +126,16 @@ const BrandSetupWizard: React.FC<BrandSetupWizardProps> = ({
   };
 
   const handleLogoUpload = async (file: File) => {
-    const result = await FileService.uploadGarageLogo(file);
-
-    if (result.success && result.url) {
-      setFormData({ ...formData, logoUrl: result.url });
+    try {
+      const result = await FileService.uploadGarageLogo(file, 'garage-temp');
+      setFormData({ ...formData, logoUrl: result });
       setErrors({ ...errors, logo: '' });
-    } else {
-      setErrors({ ...errors, logo: result.error || 'Erreur lors de l\'upload' });
+      return { success: true, url: result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'upload';
+      setErrors({ ...errors, logo: errorMessage });
+      return { success: false, error: errorMessage };
     }
-
-    return result;
   };
 
   const handleLogoRemove = () => {

@@ -49,12 +49,13 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // Génération automatique du slug à chaque changement du nom
   useEffect(() => {
     if (formData.nom) {
       const prefix = formData.nom.replace(/\s/g, '').substring(0, 3).toLowerCase();
-      const random = Math.floor(100 + Math.random() * 900); // 3 chiffres aléatoires
+      const random = Math.floor(100 + Math.random() * 900);
       setFormData((prev) => ({
         ...prev,
         slug: `${prefix}${random}`,
@@ -148,26 +149,22 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
   };
 
 
-  // Ajoutez la fonction handleAvatarUpload
-  const handleAvatarUpload = async (userId: string, file: File | null) => {
-    let avatarUrl = '/avatar01.png'; // Valeur par défaut
-
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (file) {
-      try {
-        const avatarUrlFromService = await FileService.uploadUserAvatar(file, userId);
-        if (avatarUrlFromService) {
-          avatarUrl = avatarUrlFromService;
-        }
-
-        // If your FileService.uploadUserAvatar returns a path, you can use it here.
-        // Otherwise, this block is not needed as avatarUrlFromService is already the URL.
-      } catch (error) {
-        console.error("Échec de l'upload:", error);
-        toast.error("Échec du téléchargement de l'avatar");
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('L\'image est trop volumineuse (max 2Mo)');
+        return;
       }
-    }
 
-    return avatarUrl;
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setAvatarPreview(result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Modifiez le handleSubmit existant
@@ -266,9 +263,30 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
         throw profilesError;
       }
 
-      console.log('5. Création terminée avec succès');
+      // 5. Upload de l'avatar si présent
+      let avatarUrl = '/avatar01.png';
+      if (avatarFile) {
+        try {
+          console.log('5. Upload avatar...');
+          avatarUrl = await FileService.uploadUserAvatar(avatarFile, authData.user.id);
+          
+          // Mise à jour des métadonnées auth avec l'avatar
+          await supabase.auth.updateUser({
+            data: { avatar_url: avatarUrl }
+          });
+
+          // Mise à jour de l'avatar dans public.users et public.profiles
+          await supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', authData.user.id);
+          await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('id', authData.user.id);
+          
+        } catch (avatarError) {
+          console.warn('⚠️ Erreur upload avatar (non bloquant):', avatarError);
+        }
+      }
+
+      console.log('6. Création terminée avec succès');
       toast.success('Administrateur créé avec succès');
-      onComplete(authData.user);
+      onComplete({ ...authData.user, avatar_url: avatarUrl });
 
     } catch (error) {
       console.error('Erreur création admin:', error);
@@ -317,17 +335,34 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Avatar Upload */}
               <div className="space-y-2">
-                <Label htmlFor="avatar">Avatar</Label>
-                <Input
-                  id="avatar"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    handleAvatarUpload("userId", file); // Remplacez "userId" par la vraie valeur
-                  }}
-                />
+                <Label htmlFor="avatar" className="text-blue-700 dark:text-blue-300">
+                  Avatar
+                </Label>
+                <div className="flex items-center space-x-4">
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt="Aperçu avatar"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-blue-300"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-blue-200 flex items-center justify-center">
+                      <User className="w-8 h-8 text-blue-600" />
+                    </div>
+                  )}
+                  <Input
+                    id="avatar"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="border-blue-300 dark:border-blue-600 focus:border-blue-500 dark:focus:border-blue-400"
+                  />
+                </div>
+                <p className="text-xs text-blue-600 dark:text-blue-400">
+                  Image au format JPG, PNG (max 2Mo)
+                </p>
               </div>
               {/* Nom et Prénom */}
               <div className="grid grid-cols-2 gap-4">

@@ -201,17 +201,14 @@ const Personnel: React.FC = () => {
 
       // Upload de l'avatar si un nouveau fichier est sélectionné
       if (avatarFile) {
-        const uploadResult = await FileService.uploadUserAvatar(
-          avatarFile,
-          editingMember?.auth_user_id || undefined,
-          (progress) => {
-            console.log('Upload progress:', progress);
-          }
-        );
-        if (uploadResult.success) {
-          avatarUrl = uploadResult.url;
-        } else {
-          toast.error('Erreur lors de l\'upload de l\'avatar: ' + uploadResult.error);
+        try {
+          avatarUrl = await FileService.uploadUserAvatar(
+            avatarFile,
+            editingMember?.auth_user_id || 'default-user'
+          );
+        } catch (uploadError) {
+          console.error('Erreur upload avatar:', uploadError);
+          toast.error('Erreur lors de l\'upload de l\'avatar: ' + (uploadError as Error).message);
           return;
         }
       }

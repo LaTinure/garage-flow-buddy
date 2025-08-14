@@ -65,12 +65,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ setTab }) => {
       let avatarUrl: string | undefined = undefined;
 
       // 2. Upload avatar si fourni
-      if (avatarFile) {
-        const uploadResult = await FileService.uploadUserAvatar(avatarFile);
-        if (uploadResult.success && uploadResult.url) {
-          avatarUrl = uploadResult.url;
-        } else {
-          setError(uploadResult.error || "Erreur lors de l'upload de l'avatar");
+      if (avatarFile && user) {
+        try {
+          avatarUrl = await FileService.uploadUserAvatar(avatarFile, user.id);
+        } catch (uploadError) {
+          setError("Erreur lors de l'upload de l'avatar");
           setIsLoading(false);
           return;
         }

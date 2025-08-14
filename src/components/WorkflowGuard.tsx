@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import SplashScreen from './SplashScreen';
@@ -10,10 +10,11 @@ interface WorkflowGuardProps {
 }
 
 type WorkflowState = 'loading' | 'needs-init' | 'needs-auth' | 'ready';
+type InitStep = 'super-admin' | 'pricing' | 'create-admin' | 'create-organization' | 'sms-validation' | 'garage-setup';
 
 const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
   const [workflowState, setWorkflowState] = useState<WorkflowState>('loading');
-  const [initStep, setInitStep] = useState<'super-admin' | 'create-admin' | 'pricing'>('super-admin');
+  const [initStep, setInitStep] = useState<InitStep>('super-admin');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -22,61 +23,137 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
   }, []);
 
   const checkWorkflowState = async () => {
-    console.log('[1] Début vérification workflow');
+    console.log('[1] 🔍 Début vérification workflow séquentielle stricte');
 
     try {
-      // 1. Vérification initiale - Existe-t-il au moins un super admin ?
-      console.log('[2] Vérification super_admins...');
+      setLoading(true);
+
+      // ÉTAPE 1: Vérification Super Admins (STRICTE)
+      console.log('[2] 🛡️ Vérification super_admins...');
       const { count: superAdminCount, error: adminError } = await supabase
         .from('super_admins')
         .select('*', { count: 'exact', head: true })
         .eq('est_actif', true);
 
-      // Log pour debug
-      console.log('[3] Résultat super_admins:', { superAdminCount, adminError });
+      if (adminError) {
+        console.error('[ERROR] Erreur super_admins:', adminError);
+        throw adminError;
+      }
 
-      // Si pas de super admin, forcer l'initialisation
+      console.log('[3] 📊 Super admins trouvés:', superAdminCount);
+
+      // Si aucun super admin → STOPPER et demander création
       if (!superAdminCount || superAdminCount === 0) {
-        console.log('[4] Aucun super admin → Initialisation requise');
+        console.log('[4] ❌ Aucun super admin → Arrêt du workflow');
         setWorkflowState('needs-init');
         setInitStep('super-admin');
         setLoading(false);
         return;
       }
 
-      // 2. Si on a un super admin, vérifier la session
+      // ÉTAPE 2: Vérification Session Auth (STRICTE)
+      console.log('[5] 🔐 Vérification session auth...');
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('[5] Session:', session ? 'Existe' : 'Absente');
-
+      
       if (!session) {
-        console.log('[6] Pas de session active → Auth nécessaire');
+        console.log('[6] ❌ Pas de session → Redirection auth');
         setWorkflowState('needs-auth');
         setLoading(false);
         return;
       }
 
-      // 3. Vérification des organisations seulement si authentifié
-      const { count: orgCount } = await supabase
+      console.log('[7] ✅ Session active pour:', session.user.email);
+
+      // ÉTAPE 3: Vérification Administrateurs Org (STRICTE)
+      console.log('[8] 👨‍💼 Vérification administrateurs...');
+      const { count: adminCount, error: adminOrgError } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .in('role', ['admin', 'proprietaire']);
+
+      if (adminOrgError) {
+        console.error('[ERROR] Erreur admin check:', adminOrgError);
+        throw adminOrgError;
+      }
+
+      console.log('[9] 📊 Administrateurs trouvés:', adminCount);
+
+      // Si aucun admin → STOPPER et demander création
+      if (!adminCount || adminCount === 0) {
+        console.log('[10] ❌ Aucun administrateur → Workflow création admin');
+        setWorkflowState('needs-init');
+        setInitStep('pricing'); // Commencer par le pricing
+        setLoading(false);
+        return;
+      }
+
+      // ÉTAPE 4: Vérification Organisations (STRICTE)
+      console.log('[11] 🏢 Vérification organisations...');
+      const { count: orgCount, error: orgError } = await supabase
         .from('organisations')
         .select('*', { count: 'exact', head: true });
 
-      console.log('[7] Nombre d\'organisations:', orgCount);
-
-      if (!orgCount || orgCount === 0) {
-        console.log('[8] Aucune organisation → Création admin');
-        setWorkflowState('needs-init');
-        setInitStep('create-admin');
-      } else {
-        console.log('[9] Configuration complète → Ready');
-        setWorkflowState('ready');
+      if (orgError) {
+        console.error('[ERROR] Erreur org check:', orgError);
+        throw orgError;
       }
 
+      console.log('[12] 📊 Organisations trouvées:', orgCount);
+
+      // Si aucune organisation → STOPPER et demander création
+      if (!orgCount || orgCount === 0) {
+        console.log('[13] ❌ Aucune organisation → Workflow création org');
+        setWorkflowState('needs-init');
+        setInitStep('create-organization');
+        setLoading(false);
+        return;
+      }
+
+      // ÉTAPE 5: Vérification du rôle utilisateur actuel
+      console.log('[14] 🔍 Vérification rôle utilisateur...');
+      const { data: currentUser, error: userError } = await supabase
+        .from('users')
+        .select('role, organisation_id')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userError && userError.code !== 'PGRST116') {
+        console.error('[ERROR] Erreur user check:', userError);
+        throw userError;
+      }
+
+      if (!currentUser) {
+        console.log('[15] ❌ Utilisateur non trouvé dans users → Création nécessaire');
+        setWorkflowState('needs-init');
+        setInitStep('create-admin');
+        setLoading(false);
+        return;
+      }
+
+      console.log('[16] 👤 Utilisateur trouvé:', {
+        role: currentUser.role,
+        orgId: currentUser.organisation_id
+      });
+
+      // ÉTAPE 6: Validation finale - Utilisateur admin avec organisation
+      if (currentUser.role === 'admin' && currentUser.organisation_id) {
+        console.log('[17] ✅ Configuration complète → Dashboard');
+        setWorkflowState('ready');
+        setLoading(false);
+        return;
+      }
+
+      // Cas par défaut - problème de configuration
+      console.log('[18] ⚠️ Configuration incomplète → Réinitialisation');
+      setWorkflowState('needs-init');
+      setInitStep('garage-setup'); // Dernière étape de configuration
+      setLoading(false);
+
     } catch (error) {
-      console.error('[10] Erreur critique:', error);
-      // En cas d'erreur, forcer l'initialisation
+      console.error('[ERROR CRITIQUE] Workflow guard:', error);
+      // En cas d'erreur critique, forcer la réinitialisation complète
       setWorkflowState('needs-init');
       setInitStep('super-admin');
-    } finally {
       setLoading(false);
     }
   };
@@ -120,7 +197,7 @@ const WorkflowGuard: React.FC<WorkflowGuardProps> = ({ children }) => {
       <InitializationWizard
         isOpen={true}
         onComplete={handleInitComplete}
-        startStep={initStep}
+        startStep={initStep as 'super-admin' | 'pricing' | 'create-admin'}
       />
     );
   }
