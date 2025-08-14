@@ -43,64 +43,106 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ setTab }) => {
     setIsLoading(true);
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Les mots de passe ne correspondent pas');
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      // 1. Création du compte dans Supabase Auth
-      const { user, session, error } = await signUpWithEmail(formData.email, formData.password, {
-        first_name: formData.firstName,
-        last_name: formData.lastName
+      // 1. Validation des données
+      if (!formData.email || !formData.firstName || !formData.lastName || !formData.password) {
+        throw new Error('Tous les champs obligatoires doivent être remplis');
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        throw new Error('Les mots de passe ne correspondent pas');
+      }
+
+      if (!selectedRole) {
+        throw new Error('Veuillez sélectionner un rôle');
+      }
+
+      // 2. Création du compte auth d'abord
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            role: selectedRole
+          }
+        }
       });
-      if (error) {
-        setError(error);
-        toast.error(error);
-        setIsLoading(false);
-        return;
-      }
 
-      let avatarUrl: string | undefined = undefined;
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Échec de création du compte');
 
-      // 2. Upload avatar si fourni
-      if (avatarFile && user) {
+      // 3. Upload avatar si présent
+      let avatarUrl = null;
+      if (avatarFile) {
         try {
-          avatarUrl = await FileService.uploadUserAvatar(avatarFile, user.id);
+          avatarUrl = await FileService.uploadUserAvatar(avatarFile, authData.user.id);
+          console.log('✅ Avatar uploadé:', avatarUrl);
         } catch (uploadError) {
-          setError("Erreur lors de l'upload de l'avatar");
-          setIsLoading(false);
-          return;
+          console.warn('⚠️ Erreur upload avatar:', uploadError);
         }
       }
 
-      // 3. Insertion dans la table users (public)
-      if (user) {
-        const { error: userInsertError } = await supabase
-          .from('users')
-          .insert({
-            auth_user_id: user.id,
-            full_name: `${formData.firstName} ${formData.lastName}`,
-            email: formData.email,
-            role: selectedRole, // ou autre valeur par défaut
-            avatar_url: avatarUrl
-          });
-
-        if (userInsertError) {
-          setError(userInsertError.message);
-          setIsLoading(false);
-          return;
+      // 4. Préparation du payload pour l'Edge Function
+      const payload = {
+        userId: authData.user.id,
+        userData: {
+          email: formData.email.trim(),
+          nom: formData.lastName.trim(),
+          prenom: formData.firstName.trim(),
+          role: selectedRole,
+          avatar_url: avatarUrl,
+          profile: {
+            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+            avatar_url: avatarUrl,
+            role: selectedRole
+          }
         }
+      };
+
+      console.log('📤 Envoi données:', payload);
+
+      // 5. Appel à l'Edge Function
+      const { data, error: edgeError } = await supabase.functions.invoke(
+        'create-user-complete',
+        {
+          body: JSON.stringify(payload),
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      if (edgeError) {
+        console.error('❌ Erreur Edge Function:', edgeError);
+        throw edgeError;
       }
 
-      // 4. (Optionnel) Insertion dans user_organizations si besoin
-      // await supabase.from('user_organizations').insert({ ... });
+      console.log('✅ Utilisateur créé:', data);
+      toast.success('Inscription réussie ! Vérification de votre email requise.');
 
-      toast.success('Inscription réussie ! Vérifiez votre email pour confirmer votre compte.');
-      setTab('login');
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue lors de l\'inscription';
+      // 6. Redirection
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 2000);
+
+    } catch (error) {
+      console.error('❌ Erreur:', error);
+
+      // Gestion personnalisée des erreurs
+      let errorMessage = 'Erreur lors de l\'inscription';
+
+      if (error.message.includes('User already registered')) {
+        errorMessage = 'Cet email est déjà utilisé';
+      } else if (error.message.includes('Invalid email')) {
+        errorMessage = 'Email invalide';
+      } else if (error.message.includes('Password')) {
+        errorMessage = 'Le mot de passe doit contenir au moins 6 caractères';
+      } else if (error.message.includes('network')) {
+        errorMessage = 'Erreur réseau - Vérifiez votre connexion';
+      }
+
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

@@ -121,16 +121,19 @@ const App: React.FC = () => {
             {/* Toast amélioré pour les notifications */}
             <Toaster
               position="top-right"
+              expand={false}
               richColors
+              duration={5000}  // Durée en ms avant disparition
+              pauseWhenPageIsHidden
               closeButton
-              duration={4000}
-              className="toaster-enhanced"
+              theme="light"
+              visibleToasts={3}
               toastOptions={{
                 style: {
-                  background: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  color: 'hsl(var(--card-foreground))',
+                  background: 'white',
+                  color: 'black',
                 },
+                className: 'my-toast-class',
               }}
             />
           </div>

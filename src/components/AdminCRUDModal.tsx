@@ -169,31 +169,27 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
 
   // Modifiez le handleSubmit existant
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setIsLoading(true);
+    e.preventDefault()
+    if (!validateForm()) return
+    setIsLoading(true)
 
     try {
-      console.log('1. Début création admin...');
-      
       // 1. Création organisation si nécessaire
-      let orgId = organisationData?.id;
+      let orgId = organisationData?.id
       if (!orgId) {
         const { data: org, error: orgError } = await supabase
           .from('organisations')
-          .insert({ 
+          .insert({
             nom: formData.nom,
             slug: formData.slug,
             est_actif: true
           })
           .select('id')
-          .single();
-        
-        if (orgError) throw orgError;
-        orgId = org.id;
-      }
+          .single()
 
-      console.log('2. Organisation OK, création compte auth...');
+        if (orgError) throw orgError
+        orgId = org.id
+      }
 
       // 2. Création compte auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -208,91 +204,36 @@ const AdminCRUDModal: React.FC<AdminCRUDModalProps> = ({
             organisation_id: orgId
           }
         }
-      });
+      })
 
-      if (authError) throw authError;
-      if (!authData.user?.id) throw new Error('ID utilisateur non généré');
+      if (authError) throw authError
+      if (!authData.user?.id) throw new Error('ID utilisateur non généré')
 
-      console.log('3. Compte auth créé, ID:', authData.user.id);
-
-      // 3. Création dans public.users
-      const userData = {
-        id: authData.user.id,
-        email: formData.email,
-        nom: formData.nom,
-        prenom: formData.prenom,
-        telephone: formData.phone,
-        role: 'admin',
-        organisation_id: orgId,
-        est_actif: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: usersError } = await supabase
-        .from('users')
-        .insert(userData);
-
-      if (usersError) {
-        console.error('Erreur création users:', usersError);
-        throw usersError;
-      }
-
-      console.log('4. User créé, création profile...');
-
-      // 4. Création dans public.profiles
-      const profileData = {
-        id: authData.user.id,
-        user_id: authData.user.id,
-        email: formData.email,
-        nom_complet: `${formData.prenom} ${formData.nom}`,
-        phone: formData.phone,
-        role: 'admin',
-        organisation_id: orgId,
-        est_actif: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: profilesError } = await supabase
-        .from('profiles')
-        .insert(profileData);
-
-      if (profilesError) {
-        console.error('Erreur création profile:', profilesError);
-        throw profilesError;
-      }
-
-      // 5. Upload de l'avatar si présent
-      let avatarUrl = '/avatar01.png';
-      if (avatarFile) {
-        try {
-          console.log('5. Upload avatar...');
-          avatarUrl = await FileService.uploadUserAvatar(avatarFile, authData.user.id);
-          
-          // Mise à jour des métadonnées auth avec l'avatar
-          await supabase.auth.updateUser({
-            data: { avatar_url: avatarUrl }
-          });
-
-          // Mise à jour de l'avatar dans public.users et public.profiles
-          await supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', authData.user.id);
-          await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('id', authData.user.id);
-          
-        } catch (avatarError) {
-          console.warn('⚠️ Erreur upload avatar (non bloquant):', avatarError);
+      // 3. Appel à l'Edge Function pour créer l'admin
+      const { error: edgeError } = await supabase.functions.invoke('create-admin', {
+        body: {
+          userId: authData.user.id,
+          userData: {
+            email: formData.email,
+            nom: formData.nom,
+            prenom: formData.prenom,
+            phone: formData.phone,
+            role: 'admin',
+            organisation_id: orgId
+          }
         }
-      }
+      })
 
-      console.log('6. Création terminée avec succès');
-      toast.success('Administrateur créé avec succès');
-      onComplete({ ...authData.user, avatar_url: avatarUrl });
+      if (edgeError) throw edgeError
+
+      toast.success('Administrateur créé avec succès')
+      onComplete(authData.user)
 
     } catch (error) {
-      console.error('Erreur création admin:', error);
-      toast.error('Erreur lors de la création');
+      console.error('Erreur création admin:', error)
+      toast.error('Erreur lors de la création')
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   };
 

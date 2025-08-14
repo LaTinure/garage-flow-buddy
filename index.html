@@ -37,9 +37,9 @@
   <meta name="base-url" content="<%= process.env.BASE_URL || '/' %>" />
 
   <!-- Préchargement optimisé -->
-  <link rel="preload" href="/Logo01.png" as="image" />
-  <link rel="preload" href="/Logo01-small.png" as="image" />
-
+  <!-- Modifiez les balises preload dans votre index.html -->
+  <link rel="preload" href="/Logo01.png" as="image" type="image/png">
+  <link rel="preload" href="/Logo01-small.png" as="image" type="image/png">
   <!-- Préchargement des ressources critiques -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="dns-prefetch" href="https://metssugfqsnttghfrsxx.supabase.co" />
